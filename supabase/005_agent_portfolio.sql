@@ -1,6 +1,6 @@
 create table if not exists public.agent_wallets (
   id uuid primary key default gen_random_uuid(),
-  ai_player_id uuid not null references public.ai_players(id) on delete cascade,
+  ai_player_id text not null references public.ai_players(id) on delete cascade,
   initial_budget integer not null default 10000,
   available_budget integer not null default 10000,
   allocated_budget integer not null default 0,
@@ -13,7 +13,7 @@ create table if not exists public.agent_wallets (
 create table if not exists public.agent_positions (
   id uuid primary key default gen_random_uuid(),
   question_id uuid not null references public.questions(id) on delete cascade,
-  ai_player_id uuid not null references public.ai_players(id) on delete cascade,
+  ai_player_id text not null references public.ai_players(id) on delete cascade,
   option_id uuid not null references public.question_options(id) on delete cascade,
   allocated_points integer not null,
   confidence integer not null,
@@ -28,7 +28,7 @@ create table if not exists public.agent_positions (
 
 create table if not exists public.agent_cost_events (
   id uuid primary key default gen_random_uuid(),
-  ai_player_id uuid not null references public.ai_players(id) on delete cascade,
+  ai_player_id text not null references public.ai_players(id) on delete cascade,
   question_id uuid references public.questions(id) on delete cascade,
   run_id uuid references public.agent_runs(id) on delete set null,
   provider text not null,
