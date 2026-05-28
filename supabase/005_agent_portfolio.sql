@@ -30,7 +30,7 @@ create table if not exists public.agent_cost_events (
   id uuid primary key default gen_random_uuid(),
   ai_player_id text not null references public.ai_players(id) on delete cascade,
   question_id uuid references public.questions(id) on delete cascade,
-  run_id uuid references public.agent_runs(id) on delete set null,
+  run_id uuid,
   provider text not null,
   model text not null,
   input_tokens integer not null default 0,
