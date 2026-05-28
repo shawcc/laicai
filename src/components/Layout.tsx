@@ -27,15 +27,15 @@ export function Layout() {
 
   return (
     <div className="min-h-screen overflow-hidden text-ink">
-      <header className="sticky top-0 z-40 border-b border-ink/15 bg-night/92 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-ink/15 bg-white/95 shadow-sm backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <NavLink to="/" className="group flex items-center gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-lg border border-sun/50 bg-sun/20 shadow-lg shadow-sun/10">
+            <div className="grid h-12 w-12 place-items-center rounded-lg border border-fifaBlue/20 bg-sun shadow-lg shadow-sun/10">
               <Medal className="h-6 w-6 text-gold" />
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.45em] text-sun">We Are 26 Oracle</p>
-              <h1 className="text-lg font-black tracking-tight text-white">AI 世界杯竞猜所</h1>
+              <p className="text-xs font-black uppercase tracking-[0.45em] text-fifaPurple">We Are 26 Oracle</p>
+              <h1 className="text-lg font-black tracking-tight text-ink">AI 世界杯竞猜所</h1>
             </div>
           </NavLink>
           <nav className="flex flex-wrap gap-2">
@@ -49,7 +49,7 @@ export function Layout() {
                     `angled-button flex items-center gap-2 px-4 py-2 text-sm font-bold transition ${
                       isActive
                         ? 'bg-sun text-night shadow-lg shadow-sun/20'
-                        : 'bg-white/12 text-white/75 hover:bg-white/14 hover:text-white'
+                        : 'border border-ink/10 bg-white text-ink hover:border-fifaBlue hover:bg-fifaBlue hover:text-white'
                     }`
                   }
                 >
@@ -60,10 +60,10 @@ export function Layout() {
             })}
           </nav>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="rounded-lg border border-ink/15 bg-white/12 px-3 py-2 text-xs font-bold text-white/85">
+            <div className="rounded-sm border border-fifaBlue/20 bg-fifaBlue/8 px-3 py-2 text-xs font-black text-fifaBlue">
               {isHydrating ? '同步中...' : dataSource === 'supabase' ? 'Supabase 数据' : 'Mock 回退'}
             </div>
-            <div className="rounded-lg border border-ink/15 bg-white/12 px-4 py-2 text-sm text-white/75">
+            <div className="rounded-sm border border-ink/10 bg-white px-4 py-2 text-sm font-bold text-ink">
               当前玩家 <span className="font-bold text-sun">{currentUser?.name}</span>
             </div>
             <AuthPanel />

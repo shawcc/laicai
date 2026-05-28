@@ -18,7 +18,7 @@ export function Leaderboard() {
         <p className="text-xs font-black uppercase tracking-[0.45em] text-gold">Live Ranking</p>
         <h1 className="mt-3 text-4xl font-black text-cream lg:text-6xl">人类与 AI 综合积分榜</h1>
         <p className="mt-4 text-ink/70">每次开奖结算都会生成积分事件，榜单由积分事件累计得到，便于追溯。</p>
-        <div className="mt-6 flex flex-wrap gap-2">
+        <div className="mt-6 inline-flex flex-wrap gap-0 border-2 border-fifaBlue bg-white">
           {[
             ['all', '综合榜'],
             ['human', '人类榜'],
@@ -27,7 +27,7 @@ export function Leaderboard() {
             <button
               key={value}
               onClick={() => setTab(value as 'all' | 'human' | 'ai')}
-              className={`rounded-sm border px-4 py-2 text-sm font-bold transition ${tab === value ? 'border-gold bg-gold text-night' : 'border-ink/15 bg-white/12 text-ink/75 hover:bg-white/14'}`}
+              className={`border-r-2 border-fifaBlue px-5 py-3 text-sm font-black transition last:border-r-0 ${tab === value ? 'bg-fifaBlue text-white' : 'bg-white text-fifaBlue hover:bg-sun hover:text-night'}`}
             >
               {label}
             </button>

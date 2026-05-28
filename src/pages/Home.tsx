@@ -115,12 +115,12 @@ export function Home() {
           <h2 className="text-2xl font-black text-cream">竞猜题库</h2>
           <p className="text-sm text-ink/65">题目可随时增加，锁票和结算状态实时更新。</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="inline-flex flex-wrap gap-0 border-2 border-fifaBlue bg-white">
           {filters.map((item) => (
             <button
               key={item.value}
               onClick={() => setFilter(item.value)}
-              className={`rounded-sm border px-4 py-2 text-sm font-bold transition ${filter === item.value ? 'border-fifaBlue bg-fifaBlue text-white' : 'border-ink/10 bg-white text-ink/75 hover:bg-white'}`}
+              className={`border-r-2 border-fifaBlue px-5 py-3 text-sm font-black transition last:border-r-0 ${filter === item.value ? 'bg-fifaBlue text-white' : 'bg-white text-fifaBlue hover:bg-sun hover:text-night'}`}
             >
               {item.label}
             </button>
