@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { Bot, Gauge, ListPlus, Medal, SearchCheck, Trophy } from 'lucide-react';
+import { AuthPanel } from '@/components/AuthPanel';
 import { useGameStore } from '@/store/useGameStore';
 
 const navItems = [
@@ -65,6 +66,7 @@ export function Layout() {
             <div className="rounded-lg border border-ink/15 bg-white/12 px-4 py-2 text-sm text-white/75">
               当前玩家 <span className="font-bold text-sun">{currentUser?.name}</span>
             </div>
+            <AuthPanel />
           </div>
         </div>
       </header>

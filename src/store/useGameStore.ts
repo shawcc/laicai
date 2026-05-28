@@ -23,6 +23,7 @@ type GameState = {
   dataSource: 'mock' | 'supabase';
   isHydrating: boolean;
   hydrationError?: string;
+  setCurrentUserId: (userId: string) => void;
   hydrateFromSupabase: () => Promise<void>;
   submitPrediction: (questionId: string, optionId: string) => Promise<void>;
   runAiDraft: () => void;
@@ -56,6 +57,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   dataSource: 'mock',
   isHydrating: false,
 
+  setCurrentUserId: (userId) => {
+    set({ currentUserId: userId });
+  },
+
   hydrateFromSupabase: async () => {
     if (!isSupabaseConfigured) {
       set({ dataSource: 'mock', isHydrating: false, hydrationError: undefined });
@@ -65,8 +70,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ isHydrating: true, hydrationError: undefined });
     try {
       const snapshot = await fetchGameSnapshot();
+      const currentUserId = get().currentUserId;
+      const nextCurrentUserId = snapshot.users.some((user) => user.id === currentUserId)
+        ? currentUserId
+        : snapshot.currentUserId;
       set({
-        currentUserId: snapshot.currentUserId,
+        currentUserId: nextCurrentUserId,
         users: snapshot.users,
         aiPlayers: snapshot.aiPlayers,
         questions: snapshot.questions,
