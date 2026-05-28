@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { initialAiPlayers, initialPredictions, initialQuestions, initialScoreEvents, initialUsers } from '@/data/mockData';
 import { getQuestionTotalScore, settleQuestion } from '@/lib/gameLogic';
+import { fetchGameSnapshot } from '@/lib/supabaseData';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { AiPlayer, HumanUser, Prediction, Question, QuestionCategory, ScoreEvent } from '@/types';
 
 type NewQuestionInput = {
@@ -18,12 +20,16 @@ type GameState = {
   questions: Question[];
   predictions: Prediction[];
   scoreEvents: ScoreEvent[];
-  submitPrediction: (questionId: string, optionId: string) => void;
+  dataSource: 'mock' | 'supabase';
+  isHydrating: boolean;
+  hydrationError?: string;
+  hydrateFromSupabase: () => Promise<void>;
+  submitPrediction: (questionId: string, optionId: string) => Promise<void>;
   runAiDraft: () => void;
   lockExpiredQuestions: () => void;
   lockQuestion: (questionId: string) => void;
-  revealAndSettle: (questionId: string, correctOptionId: string) => void;
-  addQuestion: (input: NewQuestionInput) => void;
+  revealAndSettle: (questionId: string, correctOptionId: string) => Promise<void>;
+  addQuestion: (input: NewQuestionInput) => Promise<void>;
 };
 
 function refreshQuestionScores(questions: Question[], predictions: Prediction[]) {
@@ -47,8 +53,39 @@ export const useGameStore = create<GameState>((set, get) => ({
   questions: initialQuestions,
   predictions: initialPredictions,
   scoreEvents: initialScoreEvents,
+  dataSource: 'mock',
+  isHydrating: false,
 
-  submitPrediction: (questionId, optionId) => {
+  hydrateFromSupabase: async () => {
+    if (!isSupabaseConfigured) {
+      set({ dataSource: 'mock', isHydrating: false, hydrationError: undefined });
+      return;
+    }
+
+    set({ isHydrating: true, hydrationError: undefined });
+    try {
+      const snapshot = await fetchGameSnapshot();
+      set({
+        currentUserId: snapshot.currentUserId,
+        users: snapshot.users,
+        aiPlayers: snapshot.aiPlayers,
+        questions: snapshot.questions,
+        predictions: snapshot.predictions,
+        scoreEvents: snapshot.scoreEvents,
+        dataSource: snapshot.source,
+        isHydrating: false,
+        hydrationError: undefined,
+      });
+    } catch (error) {
+      set({
+        dataSource: 'mock',
+        isHydrating: false,
+        hydrationError: error instanceof Error ? error.message : 'Supabase 同步失败，已回退到本地数据',
+      });
+    }
+  },
+
+  submitPrediction: async (questionId, optionId) => {
     const state = get();
     const question = state.questions.find((item) => item.id === questionId);
     if (!question || question.status !== 'open' || Date.now() >= new Date(question.lockAt).getTime()) {
@@ -62,23 +99,49 @@ export const useGameStore = create<GameState>((set, get) => ({
         prediction.participantId === state.currentUserId,
     );
 
+    const nextPrediction: Prediction = existing
+      ? { ...existing, optionId, submittedAt: new Date().toISOString() }
+      : {
+          id: `p-${Date.now()}`,
+          questionId,
+          participantType: 'human' as const,
+          participantId: state.currentUserId,
+          optionId,
+          submittedAt: new Date().toISOString(),
+        };
+
     const predictions = existing
       ? state.predictions.map((prediction) =>
-          prediction.id === existing.id ? { ...prediction, optionId, submittedAt: new Date().toISOString() } : prediction,
+          prediction.id === existing.id ? nextPrediction : prediction,
         )
       : [
           ...state.predictions,
-          {
-            id: `p-${Date.now()}`,
-            questionId,
-            participantType: 'human' as const,
-            participantId: state.currentUserId,
-            optionId,
-            submittedAt: new Date().toISOString(),
-          },
+          nextPrediction,
         ];
 
     set({ predictions, questions: refreshQuestionScores(state.questions, predictions) });
+
+    if (state.dataSource !== 'supabase' || !supabase) {
+      return;
+    }
+
+    const payload = {
+      question_id: questionId,
+      participant_type: 'human',
+      participant_id: state.currentUserId,
+      option_id: optionId,
+      submitted_at: new Date().toISOString(),
+    };
+
+    const result = existing
+      ? await supabase.from('predictions').update(payload).eq('id', existing.id)
+      : await supabase.from('predictions').insert(payload);
+
+    if (result.error) {
+      set({ hydrationError: `Supabase 写入失败，当前仅保留本地提交：${result.error.message}` });
+    } else {
+      await get().hydrateFromSupabase();
+    }
   },
 
   runAiDraft: () => {
@@ -137,7 +200,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     }));
   },
 
-  revealAndSettle: (questionId, correctOptionId) => {
+  revealAndSettle: async (questionId, correctOptionId) => {
     const state = get();
     const question = state.questions.find((item) => item.id === questionId);
     if (!question || question.status === 'settled') {
@@ -155,9 +218,21 @@ export const useGameStore = create<GameState>((set, get) => ({
       scoreEvents: nextEvents,
       questions: state.questions.map((item) => (item.id === questionId ? scoredQuestion : item)),
     });
+
+    if (state.dataSource === 'supabase' && supabase) {
+      const { error } = await supabase
+        .from('questions')
+        .update({ correct_option_id: correctOptionId, status: 'settled', total_score: scoredQuestion.totalScore })
+        .eq('id', questionId);
+      if (error) {
+        set({ hydrationError: `Supabase 结算同步失败：${error.message}` });
+      } else {
+        await get().hydrateFromSupabase();
+      }
+    }
   },
 
-  addQuestion: (input) => {
+  addQuestion: async (input) => {
     const options = input.options
       .filter(Boolean)
       .slice(0, 4)
@@ -181,5 +256,42 @@ export const useGameStore = create<GameState>((set, get) => ({
     };
 
     set((state) => ({ questions: [question, ...state.questions] }));
+
+    if (get().dataSource !== 'supabase' || !supabase) {
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('questions')
+      .insert({
+        title: input.title,
+        match_label: input.matchLabel || '待定赛程',
+        category: input.category,
+        status: 'open',
+        lock_at: input.lockAt,
+        total_score: 0,
+        human_participant_count: 0,
+      })
+      .select('id')
+      .single();
+
+    if (error || !data) {
+      set({ hydrationError: `Supabase 新增题目失败：${error?.message ?? '未知错误'}` });
+      return;
+    }
+
+    const optionRows = options.map((option) => ({
+      question_id: data.id,
+      label: option.label,
+      description: null,
+    }));
+
+    const optionInsert = await supabase.from('question_options').insert(optionRows);
+    if (optionInsert.error) {
+      set({ hydrationError: `Supabase 新增选项失败：${optionInsert.error.message}` });
+      return;
+    }
+
+    await get().hydrateFromSupabase();
   },
 }));

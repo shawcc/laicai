@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { Bot, Gauge, ListPlus, Medal, SearchCheck, Trophy } from 'lucide-react';
 import { useGameStore } from '@/store/useGameStore';
@@ -13,7 +14,15 @@ const navItems = [
 export function Layout() {
   const users = useGameStore((state) => state.users);
   const currentUserId = useGameStore((state) => state.currentUserId);
+  const dataSource = useGameStore((state) => state.dataSource);
+  const isHydrating = useGameStore((state) => state.isHydrating);
+  const hydrationError = useGameStore((state) => state.hydrationError);
+  const hydrateFromSupabase = useGameStore((state) => state.hydrateFromSupabase);
   const currentUser = users.find((user) => user.id === currentUserId);
+
+  useEffect(() => {
+    void hydrateFromSupabase();
+  }, [hydrateFromSupabase]);
 
   return (
     <div className="min-h-screen overflow-hidden text-ink">
@@ -49,12 +58,22 @@ export function Layout() {
               );
             })}
           </nav>
-          <div className="rounded-lg border border-ink/15 bg-white/12 px-4 py-2 text-sm text-white/75">
-            当前玩家 <span className="font-bold text-sun">{currentUser?.name}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="rounded-lg border border-ink/15 bg-white/12 px-3 py-2 text-xs font-bold text-white/85">
+              {isHydrating ? '同步中...' : dataSource === 'supabase' ? 'Supabase 数据' : 'Mock 回退'}
+            </div>
+            <div className="rounded-lg border border-ink/15 bg-white/12 px-4 py-2 text-sm text-white/75">
+              当前玩家 <span className="font-bold text-sun">{currentUser?.name}</span>
+            </div>
           </div>
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
+        {hydrationError ? (
+          <div className="mb-4 rounded-lg border border-red/30 bg-red/10 px-4 py-3 text-sm font-bold text-red">
+            {hydrationError}
+          </div>
+        ) : null}
         <Outlet />
       </main>
     </div>
