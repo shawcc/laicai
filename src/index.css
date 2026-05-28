@@ -23,6 +23,18 @@ body {
     linear-gradient(135deg, #eef3ff 0%, #f8fbff 42%, #e9f7ff 100%);
 }
 
+#root {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+}
+
+body > img,
+body > video,
+body > canvas {
+  display: none !important;
+}
+
 body::before {
   position: fixed;
   inset: 0;

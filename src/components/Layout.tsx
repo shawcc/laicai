@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { Bot, Gauge, ListPlus, Medal, SearchCheck, Trophy } from 'lucide-react';
-import { AuthPanel } from '@/components/AuthPanel';
 import { useGameStore } from '@/store/useGameStore';
 
 const navItems = [
@@ -13,13 +12,10 @@ const navItems = [
 ];
 
 export function Layout() {
-  const users = useGameStore((state) => state.users);
-  const currentUserId = useGameStore((state) => state.currentUserId);
   const dataSource = useGameStore((state) => state.dataSource);
   const isHydrating = useGameStore((state) => state.isHydrating);
   const hydrationError = useGameStore((state) => state.hydrationError);
   const hydrateFromSupabase = useGameStore((state) => state.hydrateFromSupabase);
-  const currentUser = users.find((user) => user.id === currentUserId);
 
   useEffect(() => {
     void hydrateFromSupabase();
@@ -63,10 +59,6 @@ export function Layout() {
             <div className="rounded-sm border border-fifaBlue/20 bg-fifaBlue/8 px-3 py-2 text-xs font-black text-fifaBlue">
               {isHydrating ? '同步中...' : dataSource === 'supabase' ? 'Supabase 数据' : 'Mock 回退'}
             </div>
-            <div className="rounded-sm border border-ink/10 bg-white px-4 py-2 text-sm font-bold text-ink">
-              当前观察员 <span className="font-bold text-sun">{currentUser?.name}</span>
-            </div>
-            <AuthPanel />
           </div>
         </div>
       </header>

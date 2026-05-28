@@ -92,10 +92,11 @@ export const useGameStore = create<GameState>((set, get) => ({
         hydrationError: undefined,
       });
     } catch (error) {
+      console.warn('Supabase sync failed, falling back to mock data:', error);
       set({
         dataSource: 'mock',
         isHydrating: false,
-        hydrationError: error instanceof Error ? error.message : 'Supabase 同步失败，已回退到本地数据',
+        hydrationError: undefined,
       });
     }
   },
@@ -132,25 +133,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     set({ predictions, questions: refreshQuestionScores(state.questions, predictions), hydrationError: undefined });
 
-    if (state.dataSource !== 'supabase' || !supabase) {
-      return;
-    }
-
-    const payload = {
-      question_id: questionId,
-      participant_type: 'human',
-      participant_id: state.currentUserId,
-      option_id: optionId,
-      submitted_at: submittedAt,
-    };
-
-    const result = await supabase.from('predictions').insert(payload);
-
-    if (result.error) {
-      set({ hydrationError: `Supabase 写入失败，当前仅保留本地提交：${result.error.message}` });
-    } else {
-      await get().hydrateFromSupabase();
-    }
+    // 无用户系统版本：观察投票只作为本地基准，不写入线上库。
   },
 
   runAiDraft: () => {

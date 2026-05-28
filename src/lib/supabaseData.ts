@@ -3,16 +3,6 @@ import { getQuestionTotalScore } from '@/lib/gameLogic';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { AgentCostEvent, AgentPosition, AiPlayer, HumanUser, Prediction, Question, QuestionOption, ScoreEvent } from '@/types';
 
-type ProfileRow = {
-  id: string;
-  nickname: string;
-  avatar_url: string | null;
-  favorite_team: string | null;
-  total_score: number;
-  available_points: number | null;
-  battle_score: number | null;
-};
-
 type QuestionRow = {
   id: string;
   title: string;
@@ -80,24 +70,6 @@ export type GameSnapshot = {
   agentCostEvents: AgentCostEvent[];
   source: 'mock' | 'supabase';
 };
-
-const palette = ['#14B86A', '#2A9DF4', '#FFB703', '#F25F4C', '#7C3AED', '#006D77'];
-
-function colorFromText(text: string) {
-  const hash = [...text].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return palette[hash % palette.length];
-}
-
-function mapProfiles(rows: ProfileRow[]): HumanUser[] {
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.nickname,
-    avatarColor: colorFromText(row.nickname),
-    totalScore: row.total_score,
-    availablePoints: row.available_points ?? 500,
-    battleScore: row.battle_score ?? row.total_score,
-  }));
-}
 
 function mapPredictions(rows: PredictionRow[]): Prediction[] {
   return rows.map((row) => ({
@@ -208,9 +180,8 @@ export async function fetchGameSnapshot(): Promise<GameSnapshot> {
     return getMockSnapshot();
   }
 
-  const [profilesResult, questionsResult, optionsResult, predictionsResult, aiPlayersResult, scoreEventsResult] =
+  const [questionsResult, optionsResult, predictionsResult, aiPlayersResult, scoreEventsResult] =
     await Promise.all([
-      supabase.from('profiles').select('id, nickname, avatar_url, favorite_team, total_score, available_points, battle_score'),
       supabase
         .from('questions')
         .select('id, title, match_label, category, status, lock_at, created_at, correct_option_id, human_participant_count, total_score')
@@ -227,7 +198,6 @@ export async function fetchGameSnapshot(): Promise<GameSnapshot> {
     ]);
 
   const error = [
-    profilesResult.error,
     questionsResult.error,
     optionsResult.error,
     predictionsResult.error,
@@ -246,7 +216,6 @@ export async function fetchGameSnapshot(): Promise<GameSnapshot> {
     (optionsResult.data ?? []) as QuestionOptionRow[],
     predictions,
   );
-  const users = mapProfiles((profilesResult.data ?? []) as ProfileRow[]);
   const aiPlayers = mapAiPlayers((aiPlayersResult.data ?? []) as AiPlayerRow[], scoreEvents, predictions);
 
   if (questions.length === 0) {
@@ -254,14 +223,14 @@ export async function fetchGameSnapshot(): Promise<GameSnapshot> {
   }
 
   return {
-    currentUserId: users[0]?.id ?? initialUsers[0]?.id ?? '',
-    users: users.length > 0 ? users : initialUsers,
+    currentUserId: initialUsers[0]?.id ?? '',
+    users: initialUsers,
     aiPlayers: aiPlayers.length > 0 ? aiPlayers : initialAiPlayers,
     questions,
     predictions,
     scoreEvents,
-    agentPositions: [],
-    agentCostEvents: [],
+    agentPositions: initialAgentPositions,
+    agentCostEvents: initialAgentCostEvents,
     source: 'supabase',
   };
 }
