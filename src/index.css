@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: "Aptos", "Avenir Next", "Noto Sans SC", "Segoe UI", sans-serif;
+  color: #14213d;
+  background: #eef3ff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 255, 255, 0.75), transparent 24%),
+    radial-gradient(circle at 88% 14%, rgba(0, 198, 255, 0.24), transparent 24%),
+    radial-gradient(circle at 72% 88%, rgba(255, 217, 102, 0.28), transparent 30%),
+    linear-gradient(135deg, #eef3ff 0%, #f8fbff 42%, #e9f7ff 100%);
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  background-image:
+    linear-gradient(rgba(5, 21, 70, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(5, 21, 70, 0.035) 1px, transparent 1px),
+    repeating-linear-gradient(120deg, transparent 0 18px, rgba(69, 43, 255, 0.055) 18px 20px);
+  background-size: 44px 44px, 44px 44px, 160px 160px;
+  mask-image: linear-gradient(to bottom, black, transparent 88%);
+}
+
+::selection {
+  color: #14213d;
+  background: #ffd166;
+}
+
+@layer components {
+  .score-card {
+    @apply rounded-xl border border-ink/10 bg-white shadow-glow backdrop-blur-xl;
+  }
+
+  .poster-panel {
+    @apply rounded-xl border border-white/20 bg-fifaBlue shadow-glow;
+    background:
+      radial-gradient(circle at 16% 16%, rgba(255, 255, 255, 0.22), transparent 20%),
+      radial-gradient(circle at 82% 18%, rgba(0, 198, 255, 0.46), transparent 24%),
+      radial-gradient(circle at 70% 86%, rgba(255, 217, 102, 0.42), transparent 18%),
+      linear-gradient(135deg, #071a8c 0%, #452bff 54%, #00a3ff 125%);
+  }
+
+  .official-card {
+    @apply rounded-xl border border-ink/10 bg-white shadow-glow transition hover:-translate-y-1 hover:shadow-xl;
+  }
+
+  .angled-button {
+    clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  }
+
+  .stadium-line {
+    background: linear-gradient(90deg, transparent, rgba(0, 198, 255, 0.95), rgba(255, 217, 102, 0.95), transparent);
+  }
+}
+
+@keyframes boardFlip {
+  0% { transform: rotateX(24deg); opacity: 0; }
+  100% { transform: rotateX(0deg); opacity: 1; }
+}
+
+.flip-in {
+  animation: boardFlip 0.55s ease both;
+}

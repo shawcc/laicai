@@ -1,0 +1,130 @@
+create extension if not exists "pgcrypto";
+
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  nickname text not null,
+  avatar_url text,
+  favorite_team text,
+  total_score integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.questions (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  match_label text not null,
+  category text not null,
+  status text not null default 'open',
+  lock_at timestamptz not null,
+  correct_option_id uuid,
+  total_score integer not null default 0,
+  human_participant_count integer not null default 0,
+  created_by uuid references auth.users(id),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.question_options (
+  id uuid primary key default gen_random_uuid(),
+  question_id uuid not null references public.questions(id) on delete cascade,
+  label text not null,
+  description text
+);
+
+alter table public.questions
+  add constraint questions_correct_option_fk
+  foreign key (correct_option_id) references public.question_options(id);
+
+create table if not exists public.predictions (
+  id uuid primary key default gen_random_uuid(),
+  question_id uuid not null references public.questions(id) on delete cascade,
+  participant_type text not null check (participant_type in ('human', 'ai')),
+  participant_id text not null,
+  option_id uuid not null references public.question_options(id),
+  confidence integer,
+  reasoning text,
+  is_correct boolean,
+  earned_score integer,
+  submitted_at timestamptz not null default now(),
+  unique(question_id, participant_type, participant_id)
+);
+
+create table if not exists public.ai_players (
+  id text primary key,
+  name text not null,
+  provider text not null,
+  model text,
+  enabled boolean not null default true,
+  system_prompt text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.evidence_packages (
+  id uuid primary key default gen_random_uuid(),
+  question_id uuid not null references public.questions(id) on delete cascade,
+  summary_for_humans text not null,
+  prompt_for_players text not null,
+  facts jsonb not null default '[]'::jsonb,
+  sources jsonb not null default '[]'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.score_events (
+  id uuid primary key default gen_random_uuid(),
+  question_id uuid not null references public.questions(id),
+  participant_type text not null check (participant_type in ('human', 'ai')),
+  participant_id text not null,
+  score integer not null,
+  reason text not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.feature_flags (
+  key text primary key,
+  enabled boolean not null default false,
+  rollout integer not null default 0 check (rollout between 0 and 100),
+  description text,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.share_cards (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade,
+  question_id uuid references public.questions(id),
+  image_url text,
+  title text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.profiles enable row level security;
+alter table public.questions enable row level security;
+alter table public.question_options enable row level security;
+alter table public.predictions enable row level security;
+alter table public.ai_players enable row level security;
+alter table public.evidence_packages enable row level security;
+alter table public.score_events enable row level security;
+alter table public.feature_flags enable row level security;
+alter table public.share_cards enable row level security;
+
+create policy "profiles are public readable" on public.profiles for select using (true);
+create policy "users update own profile" on public.profiles for update using (auth.uid() = id);
+create policy "published questions readable" on public.questions for select using (true);
+create policy "question options readable" on public.question_options for select using (true);
+create policy "ai players readable" on public.ai_players for select using (true);
+create policy "evidence readable" on public.evidence_packages for select using (true);
+create policy "score events readable" on public.score_events for select using (true);
+create policy "feature flags readable" on public.feature_flags for select using (true);
+create policy "share cards readable" on public.share_cards for select using (true);
+
+create policy "users read own predictions" on public.predictions
+  for select using (participant_type = 'ai' or participant_id = auth.uid()::text);
+
+create policy "users insert own unlocked predictions" on public.predictions
+  for insert with check (
+    participant_type = 'human'
+    and participant_id = auth.uid()::text
+    and exists (
+      select 1 from public.questions q
+      where q.id = question_id and q.status = 'open' and q.lock_at > now()
+    )
+  );
