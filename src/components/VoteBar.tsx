@@ -13,7 +13,7 @@ export function VoteBar({ question, predictions }: { question: Question; predict
           <div key={option.id}>
             <div className="mb-1 flex items-center justify-between text-sm">
               <span className="font-bold text-cream">{option.label}</span>
-              <span className={isCorrect ? 'font-black text-gold' : 'text-ink/70'}>{votes} 票 · {percent}%</span>
+              <span className={isCorrect ? 'font-black text-gold' : 'text-ink/70'}>{votes} 次观察 · {percent}%</span>
             </div>
             <div className="h-3 overflow-hidden rounded-sm bg-white/10">
               <div className={`h-full rounded-sm ${isCorrect ? 'bg-gold' : 'bg-green'}`} style={{ width: `${percent}%` }} />

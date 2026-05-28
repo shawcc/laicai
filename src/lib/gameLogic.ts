@@ -61,12 +61,11 @@ export function settleQuestion(question: Question, predictions: Prediction[]) {
       return prediction;
     }
     const isCorrect = prediction.optionId === question.correctOptionId;
-    const earnedScore = isCorrect ? prediction.finalPayout ?? prediction.potentialPayout ?? question.totalScore : 0;
+    const earnedScore = isCorrect ? question.totalScore : 0;
     return {
       ...prediction,
       isCorrect,
       earnedScore,
-      finalPayout: earnedScore,
     };
   });
   const scoreEvents: ScoreEvent[] = scoped
@@ -76,8 +75,8 @@ export function settleQuestion(question: Question, predictions: Prediction[]) {
       questionId: question.id,
       participantType: prediction.participantType,
       participantId: prediction.participantId,
-      score: prediction.finalPayout ?? prediction.potentialPayout ?? question.totalScore,
-      reason: `答对「${question.title}」`,
+      score: question.totalScore,
+      reason: `命中预测任务「${question.title}」`,
       createdAt: new Date().toISOString(),
     }));
 
@@ -89,11 +88,11 @@ export function buildLeaderboard(users: HumanUser[], aiPlayers: AiPlayer[], scor
     id: user.id,
     name: user.name,
     kind: 'human' as const,
-    badge: '人类玩家',
+    badge: '观察员',
     score: scoreEvents
       .filter((event) => event.participantType === 'human' && event.participantId === user.id)
       .reduce((sum, event) => sum + event.score, 0),
-    meta: '现场竞猜团',
+    meta: '人类观察基准线',
   }));
   const aiRows = aiPlayers.map((ai) => ({
     id: ai.id,
@@ -112,7 +111,7 @@ export function buildLeaderboard(users: HumanUser[], aiPlayers: AiPlayer[], scor
 export function formatCountdown(lockAt: string) {
   const diff = new Date(lockAt).getTime() - Date.now();
   if (diff <= 0) {
-    return '已锁票';
+    return '已截止';
   }
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(minutes / 60);

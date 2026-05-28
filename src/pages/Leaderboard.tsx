@@ -16,13 +16,13 @@ export function Leaderboard() {
     <div className="space-y-6">
       <section className="score-card p-6 lg:p-8">
         <p className="text-xs font-black uppercase tracking-[0.45em] text-gold">Live Ranking</p>
-        <h1 className="mt-3 text-4xl font-black text-cream lg:text-6xl">人类与 AI 综合积分榜</h1>
-        <p className="mt-4 text-ink/70">每次开奖结算都会生成积分事件，榜单由积分事件累计得到，便于追溯。</p>
+        <h1 className="mt-3 text-4xl font-black text-cream lg:text-6xl">AI Agent 评测榜</h1>
+        <p className="mt-4 text-ink/70">每次结果确认后都会生成评测事件，榜单用于观察模型命中、置信度和解释能力。</p>
         <div className="mt-6 inline-flex flex-wrap gap-0 border-2 border-fifaBlue bg-white">
           {[
-            ['all', '综合榜'],
-            ['human', '人类榜'],
-            ['ai', 'AI 榜'],
+            ['all', '综合评测'],
+            ['human', '观察基准'],
+            ['ai', 'Agent 榜'],
           ].map(([value, label]) => (
             <button
               key={value}
@@ -40,7 +40,7 @@ export function Leaderboard() {
       <SocialShareCard />
 
       <section className="score-card p-5">
-        <h2 className="mb-4 text-xl font-black text-cream">积分明细</h2>
+        <h2 className="mb-4 text-xl font-black text-cream">评测明细</h2>
         <div className="grid gap-3">
           {scoreEvents.map((event) => {
             const person = event.participantType === 'ai' ? aiPlayers.find((ai) => ai.id === event.participantId) : users.find((user) => user.id === event.participantId);

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { initialAiPlayers, initialPredictions, initialQuestions, initialScoreEvents, initialUsers } from '@/data/mockData';
-import { getDifficultyMultiplier, getPotentialPayout, getQuestionTotalScore, getTimeMultiplier, settleQuestion } from '@/lib/gameLogic';
+import { getQuestionTotalScore, settleQuestion } from '@/lib/gameLogic';
 import { fetchGameSnapshot } from '@/lib/supabaseData';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { AiPlayer, HumanUser, Prediction, Question, QuestionCategory, ScoreEvent } from '@/types';
@@ -25,7 +25,7 @@ type GameState = {
   hydrationError?: string;
   setCurrentUserId: (userId: string) => void;
   hydrateFromSupabase: () => Promise<void>;
-  submitPrediction: (questionId: string, optionId: string, stakePoints: number) => Promise<void>;
+  submitPrediction: (questionId: string, optionId: string) => Promise<void>;
   runAiDraft: () => void;
   lockExpiredQuestions: () => void;
   lockQuestion: (questionId: string) => void;
@@ -44,7 +44,7 @@ const aiReasoning = [
   '赛程密度和阵容轮换显示，这道题存在明确概率边。',
   '模型把近期状态、赔率波动和历史对阵合并后选择该答案。',
   '该选项在模拟一万次比赛路径中胜率最高。',
-  '临场变量偏向防守方，但热门方仍有稳定收益。',
+  '临场变量偏向防守方，但公开信息仍支持该判断。',
 ];
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -94,15 +94,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
-  submitPrediction: async (questionId, optionId, stakePoints) => {
+  submitPrediction: async (questionId, optionId) => {
     const state = get();
     const question = state.questions.find((item) => item.id === questionId);
     if (!question || question.status !== 'open' || Date.now() >= new Date(question.lockAt).getTime()) {
-      return;
-    }
-    const currentUser = state.users.find((user) => user.id === state.currentUserId);
-    if (!currentUser || currentUser.availablePoints < stakePoints) {
-      set({ hydrationError: '可用积分不足，无法下注' });
       return;
     }
 
@@ -113,14 +108,11 @@ export const useGameStore = create<GameState>((set, get) => ({
         prediction.participantId === state.currentUserId,
     );
     if (existing) {
-      set({ hydrationError: '这道题已经下注锁定，不能修改答案' });
+      set({ hydrationError: '这道任务已经提交观察投票，不能重复提交' });
       return;
     }
 
     const submittedAt = new Date().toISOString();
-    const timeMultiplier = getTimeMultiplier(question.lockAt, submittedAt);
-    const difficultyMultiplier = getDifficultyMultiplier(state.predictions, question, optionId);
-    const potentialPayout = getPotentialPayout(stakePoints, timeMultiplier, difficultyMultiplier);
     const nextPrediction: Prediction = {
       id: `p-${Date.now()}`,
       questionId,
@@ -128,21 +120,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       participantId: state.currentUserId,
       optionId,
       submittedAt,
-      stakePoints,
-      timeMultiplier,
-      difficultyMultiplier,
-      potentialPayout,
     };
 
     const predictions = [...state.predictions, nextPrediction];
 
-    const users = state.users.map((user) =>
-      user.id === state.currentUserId
-        ? { ...user, availablePoints: user.availablePoints - stakePoints }
-        : user,
-    );
-
-    set({ predictions, users, questions: refreshQuestionScores(state.questions, predictions), hydrationError: undefined });
+    set({ predictions, questions: refreshQuestionScores(state.questions, predictions), hydrationError: undefined });
 
     if (state.dataSource !== 'supabase' || !supabase) {
       return;
@@ -154,10 +136,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       participant_id: state.currentUserId,
       option_id: optionId,
       submitted_at: submittedAt,
-      stake_points: stakePoints,
-      time_multiplier: timeMultiplier,
-      difficulty_multiplier: difficultyMultiplier,
-      potential_payout: potentialPayout,
     };
 
     const result = await supabase.from('predictions').insert(payload);
@@ -165,10 +143,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (result.error) {
       set({ hydrationError: `Supabase 写入失败，当前仅保留本地提交：${result.error.message}` });
     } else {
-      await supabase
-        .from('profiles')
-        .update({ available_points: currentUser.availablePoints - stakePoints })
-        .eq('id', state.currentUserId);
       await get().hydrateFromSupabase();
     }
   },

@@ -2,10 +2,10 @@ import type { QuestionStatus } from '@/types';
 
 const statusMap: Record<QuestionStatus, string> = {
   draft: '草稿',
-  open: '开放竞猜',
-  locked: '已锁票',
-  revealed: '已开奖',
-  settled: '已结算',
+  open: '征集中',
+  locked: '已截止',
+  revealed: '结果已出',
+  settled: '已评测',
   voided: '已作废',
 };
 

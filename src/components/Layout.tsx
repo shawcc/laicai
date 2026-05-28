@@ -5,10 +5,10 @@ import { AuthPanel } from '@/components/AuthPanel';
 import { useGameStore } from '@/store/useGameStore';
 
 const navItems = [
-  { to: '/', label: '竞猜大厅', icon: Gauge },
+  { to: '/', label: '任务大厅', icon: Gauge },
   { to: '/intelligence', label: 'AI 情报', icon: SearchCheck },
-  { to: '/ai-players', label: 'AI 选手', icon: Bot },
-  { to: '/leaderboard', label: '排行榜', icon: Trophy },
+  { to: '/ai-players', label: 'Agent 竞技场', icon: Bot },
+  { to: '/leaderboard', label: '评测榜', icon: Trophy },
   { to: '/admin', label: '运营控制台', icon: ListPlus },
 ];
 
@@ -35,7 +35,7 @@ export function Layout() {
             </div>
             <div>
               <p className="text-xs font-black uppercase tracking-[0.45em] text-fifaPurple">We Are 26 Oracle</p>
-              <h1 className="text-lg font-black tracking-tight text-ink">AI 世界杯竞猜所</h1>
+              <h1 className="text-lg font-black tracking-tight text-ink">AI Agent 世界杯观察站</h1>
             </div>
           </NavLink>
           <nav className="flex flex-wrap gap-2">
@@ -64,7 +64,7 @@ export function Layout() {
               {isHydrating ? '同步中...' : dataSource === 'supabase' ? 'Supabase 数据' : 'Mock 回退'}
             </div>
             <div className="rounded-sm border border-ink/10 bg-white px-4 py-2 text-sm font-bold text-ink">
-              当前玩家 <span className="font-bold text-sun">{currentUser?.name}</span>
+              当前观察员 <span className="font-bold text-sun">{currentUser?.name}</span>
             </div>
             <AuthPanel />
           </div>

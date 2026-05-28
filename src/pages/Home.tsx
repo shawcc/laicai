@@ -1,4 +1,4 @@
-import { Bot, CalendarDays, Flame, Lock, Trophy, Users } from 'lucide-react';
+import { Bot, CalendarDays, Flame, Lock, SearchCheck, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { QuestionCard } from '@/components/QuestionCard';
 import { PublicAiBrief } from '@/components/PublicAiBrief';
@@ -8,9 +8,9 @@ import type { QuestionStatus } from '@/types';
 
 const filters: Array<{ label: string; value: 'all' | QuestionStatus }> = [
   { label: '全部', value: 'all' },
-  { label: '开放', value: 'open' },
-  { label: '锁票', value: 'locked' },
-  { label: '结算', value: 'settled' },
+  { label: '征集中', value: 'open' },
+  { label: '截止', value: 'locked' },
+  { label: '已评测', value: 'settled' },
 ];
 
 const countdownTiles = [
@@ -23,18 +23,18 @@ const countdownTiles = [
 const officialHighlights = [
   {
     tag: 'Need to know',
-    title: '48 队，104 场，题库会跟着赛程自动扩展',
-    body: '每场比赛都可以拆成胜负、比分、先进球、球员表现、冷门概率等竞猜题。',
+    title: '48 队，104 场，任务会跟着赛程自动扩展',
+    body: '每场比赛都可以拆成胜负、比分、先进球、球员表现、冷门概率等 AI 预测任务。',
   },
   {
     tag: 'Spotlight',
-    title: '公共 AI 情报员先整理依据，再让选手作答',
+    title: '公共 AI 情报员先整理依据，再让 Agent 作答',
     body: '伤停、阵容、赔率、新闻、历史对阵统一进入 Evidence Package，降低黑箱判断。',
   },
   {
     tag: 'Fan Moment',
-    title: '猜中后生成可分享战报卡',
-    body: '把命中题目、积分、排名变化做成社交媒体友好的海报，帮助传播。',
+    title: '模型命中后生成可分享研究卡',
+    body: '把任务、模型判断、证据引用和评测结果做成社交媒体友好的海报。',
   },
 ];
 
@@ -50,8 +50,8 @@ export function Home() {
     () => questions.filter((question) => filter === 'all' || question.status === filter),
     [filter, questions],
   );
-  const humanParticipants = predictions.filter((prediction) => prediction.participantType === 'human').length;
-  const prizePool = questions.reduce((sum, question) => sum + question.totalScore, 0);
+  const communityVotes = predictions.filter((prediction) => prediction.participantType === 'human').length;
+  const agentPredictions = predictions.filter((prediction) => prediction.participantType === 'ai').length;
 
   return (
     <div className="space-y-8">
@@ -67,11 +67,11 @@ export function Home() {
               <span className="font-bold">11 June - 19 July 2026</span>
             </div>
             <p className="mt-5 max-w-2xl text-base leading-8 text-white/75">
-              参考官方赛事站的信息节奏：大标题、倒计时、资讯卡片和赛程感。这里不复制官方素材，只把竞猜、AI 情报和积分榜做成赛事主站体验。
+              一个短期世界杯 AI Agent 观察站：题目由运营或社群提案产生，Agent 基于公开信息源提交预测，平台追踪命中、置信度和解释质量。
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <button onClick={runAiDraft} className="angled-button bg-sun px-5 py-3 font-black text-night transition hover:brightness-110">AI 自动选题</button>
-              <button onClick={lockExpiredQuestions} className="angled-button border border-white/25 bg-white/12 px-5 py-3 font-black text-white transition hover:bg-white/20">自动锁票巡检</button>
+              <button onClick={runAiDraft} className="angled-button bg-sun px-5 py-3 font-black text-night transition hover:brightness-110">启动 Agent 任务</button>
+              <button onClick={lockExpiredQuestions} className="angled-button border border-white/25 bg-white/12 px-5 py-3 font-black text-white transition hover:bg-white/20">截止任务巡检</button>
             </div>
           </div>
           <div className="rounded-xl bg-white/12 p-4 backdrop-blur-md">
@@ -103,17 +103,26 @@ export function Home() {
 
       <PublicAiBrief />
 
+      <section className="rounded-sm border-2 border-fifaBlue bg-white p-5">
+        <p className="text-xs font-black uppercase tracking-[0.32em] text-fifaPurple">Product Boundary</p>
+        <h2 className="mt-2 text-2xl font-black text-ink">只做 AI 模型观察，不做竞猜服务</h2>
+        <p className="mt-3 max-w-4xl text-sm font-bold leading-7 text-ink/62">
+          本站用于展示 AI Agent 如何基于公开信息源进行世界杯预测任务，并对模型命中率、置信度和解释质量进行评测。
+          人类投票只作为观察基准，不涉及投注、收益、返奖或兑换。
+        </p>
+      </section>
+
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="开放题目" value={questions.filter((q) => q.status === 'open').length} icon={Flame} accent="#14B86A" />
-        <StatCard label="总分池" value={prizePool} icon={Trophy} accent="#FFB703" />
-        <StatCard label="人类票数" value={humanParticipants} icon={Users} accent="#2A9DF4" />
+        <StatCard label="Agent 预测" value={agentPredictions} icon={SearchCheck} accent="#FFB703" />
+        <StatCard label="观察投票" value={communityVotes} icon={Users} accent="#2A9DF4" />
         <StatCard label="AI 选手" value={aiPlayers.length} icon={Bot} accent="#F25F4C" />
       </section>
 
       <section className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-2xl font-black text-cream">竞猜题库</h2>
-          <p className="text-sm text-ink/65">题目可随时增加，锁票和结算状态实时更新。</p>
+          <h2 className="text-2xl font-black text-cream">预测任务库</h2>
+          <p className="text-sm text-ink/65">任务可由运营发布，也可由社群高票提案进入队列；截止和评测状态实时更新。</p>
         </div>
         <div className="inline-flex flex-wrap gap-0 border-2 border-fifaBlue bg-white">
           {filters.map((item) => (

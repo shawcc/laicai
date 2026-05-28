@@ -21,22 +21,22 @@ export function QuestionCard({ question, predictions }: { question: Question; pr
       <div className="relative mt-6 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         <div className="rounded-lg border border-ink/10 bg-white p-3">
           <Users className="mb-2 h-4 w-4 text-sky" />
-          <p className="text-ink/65">人类参与</p>
+          <p className="text-ink/65">观察投票</p>
           <p className="font-black text-cream">{question.humanParticipantCount}</p>
         </div>
         <div className="rounded-lg border border-ink/10 bg-white p-3">
           <Flame className="mb-2 h-4 w-4 text-gold" />
-          <p className="text-ink/65">题目总分</p>
+          <p className="text-ink/65">任务热度</p>
           <p className="font-black text-cream">{question.totalScore}</p>
         </div>
         <div className="rounded-lg border border-ink/10 bg-white p-3">
           <Bot className="mb-2 h-4 w-4 text-green" />
-          <p className="text-ink/65">AI 参战</p>
+          <p className="text-ink/65">Agent 提交</p>
           <p className="font-black text-cream">{aiCount}</p>
         </div>
         <div className="rounded-lg border border-ink/10 bg-white p-3">
           <Clock className="mb-2 h-4 w-4 text-red" />
-          <p className="text-ink/65">锁票</p>
+          <p className="text-ink/65">截止</p>
           <p className="font-black text-cream">{formatCountdown(question.lockAt)}</p>
         </div>
       </div>

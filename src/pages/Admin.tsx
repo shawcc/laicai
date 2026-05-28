@@ -44,16 +44,16 @@ export function Admin() {
       <section className="score-card p-6 lg:p-8">
         <p className="text-xs font-black uppercase tracking-[0.45em] text-gold">Control Room</p>
         <h1 className="mt-3 text-4xl font-black text-cream lg:text-6xl">运营控制台</h1>
-        <p className="mt-4 text-ink/70">新增题目、触发 AI 自动选题、锁票巡检、手动锁票和开奖结算。</p>
+        <p className="mt-4 text-ink/70">发布预测任务、触发 Agent 自动提交、截止巡检、手动截止和结果评测。</p>
         <div className="mt-6 flex flex-wrap gap-3">
-          <button onClick={runAiDraft} className="angled-button inline-flex items-center gap-2 bg-gold px-5 py-3 font-black text-night"><Bot className="h-4 w-4" /> AI 自动选题</button>
-          <button onClick={lockExpiredQuestions} className="angled-button inline-flex items-center gap-2 border border-red/40 bg-red/15 px-5 py-3 font-black text-red"><Radar className="h-4 w-4" /> 自动锁票巡检</button>
+          <button onClick={runAiDraft} className="angled-button inline-flex items-center gap-2 bg-gold px-5 py-3 font-black text-night"><Bot className="h-4 w-4" /> 启动 Agent 任务</button>
+          <button onClick={lockExpiredQuestions} className="angled-button inline-flex items-center gap-2 border border-red/40 bg-red/15 px-5 py-3 font-black text-red"><Radar className="h-4 w-4" /> 截止巡检</button>
         </div>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <form onSubmit={handleSubmit} className="score-card space-y-4 p-5">
-          <h2 className="text-xl font-black text-cream">新增竞猜题目</h2>
+          <h2 className="text-xl font-black text-cream">新增预测任务</h2>
           <Field label="题目">
             <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="例如：谁会成为本场最佳球员？" className="w-full rounded-lg border border-ink/10 bg-white px-4 py-3 text-ink outline-none transition placeholder:text-ink/35 focus:border-sun" />
           </Field>
@@ -68,7 +68,7 @@ export function Admin() {
           <Field label="选项，每行一个">
             <textarea value={options} onChange={(event) => setOptions(event.target.value)} rows={4} className="w-full rounded-lg border border-ink/10 bg-white px-4 py-3 text-ink outline-none focus:border-sun" />
           </Field>
-          <Field label="锁票时间">
+          <Field label="提交截止时间">
             <input type="datetime-local" value={lockAt} onChange={(event) => setLockAt(event.target.value)} className="w-full rounded-lg border border-ink/10 bg-white px-4 py-3 text-ink outline-none focus:border-sun" />
           </Field>
           <button className="angled-button inline-flex items-center gap-2 bg-green px-5 py-3 font-black text-night transition hover:brightness-110"><Plus className="h-4 w-4" /> 创建题目</button>
@@ -85,15 +85,15 @@ export function Admin() {
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.22em] text-green">{question.matchLabel}</p>
                     <h3 className="mt-2 font-black text-cream">{question.title}</h3>
-                    <p className="mt-1 text-sm text-ink/65">总分 {question.totalScore} · 人类 {question.humanParticipantCount} · 选项 {question.options.length}</p>
+                    <p className="mt-1 text-sm text-ink/65">任务热度 {question.totalScore} · 观察 {question.humanParticipantCount} · 选项 {question.options.length}</p>
                   </div>
                   <StatusBadge status={question.status} />
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <button disabled={question.status !== 'open'} onClick={() => lockQuestion(question.id)} className="rounded-sm border border-red/30 bg-red/10 px-3 py-2 text-xs font-black text-red disabled:cursor-not-allowed disabled:opacity-40"><Lock className="mr-1 inline h-3 w-3" /> 锁票</button>
+                  <button disabled={question.status !== 'open'} onClick={() => lockQuestion(question.id)} className="rounded-sm border border-red/30 bg-red/10 px-3 py-2 text-xs font-black text-red disabled:cursor-not-allowed disabled:opacity-40"><Lock className="mr-1 inline h-3 w-3" /> 截止</button>
                   {question.options.map((option) => (
                     <button key={option.id} disabled={question.status === 'settled'} onClick={() => revealAndSettle(question.id, option.id)} className="rounded-sm border border-gold/30 bg-gold/10 px-3 py-2 text-xs font-black text-gold disabled:cursor-not-allowed disabled:opacity-40">
-                      <CheckCircle2 className="mr-1 inline h-3 w-3" /> 以「{option.label}」开奖
+                      <CheckCircle2 className="mr-1 inline h-3 w-3" /> 以「{option.label}」作为结果
                     </button>
                   ))}
                 </div>
