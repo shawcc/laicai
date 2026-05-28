@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Admin } from '@/pages/Admin';
+import { AuthCallback } from '@/pages/AuthCallback';
 import { AiPlayers } from '@/pages/AiPlayers';
 import { Home } from '@/pages/Home';
 import { Intelligence } from '@/pages/Intelligence';
@@ -13,6 +14,7 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/questions/:questionId" element={<QuestionDetail />} />
           <Route path="/intelligence" element={<Intelligence />} />
           <Route path="/ai-players" element={<AiPlayers />} />
