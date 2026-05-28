@@ -21,6 +21,39 @@ export function getOptionVotes(predictions: Prediction[], questionId: string, op
   ).length;
 }
 
+export function getTimeMultiplier(lockAt: string, submittedAt = new Date().toISOString()) {
+  const hours = (new Date(lockAt).getTime() - new Date(submittedAt).getTime()) / 36e5;
+  if (hours >= 72) {
+    return 2.5;
+  }
+  if (hours >= 48) {
+    return 2;
+  }
+  if (hours >= 24) {
+    return 1.6;
+  }
+  if (hours >= 6) {
+    return 1.25;
+  }
+  return 1;
+}
+
+export function getDifficultyMultiplier(predictions: Prediction[], question: Question, optionId: string) {
+  const humanPredictions = predictions.filter(
+    (prediction) => prediction.questionId === question.id && prediction.participantType === 'human',
+  );
+  const total = Math.max(humanPredictions.length, 1);
+  const optionCount = Math.max(
+    humanPredictions.filter((prediction) => prediction.optionId === optionId).length,
+    1,
+  );
+  return Math.min(Math.max(Number((total / optionCount).toFixed(2)), 1), 5);
+}
+
+export function getPotentialPayout(stakePoints: number, timeMultiplier: number, difficultyMultiplier: number) {
+  return Math.round(stakePoints * timeMultiplier * difficultyMultiplier);
+}
+
 export function settleQuestion(question: Question, predictions: Prediction[]) {
   const scoped = predictions.filter((prediction) => prediction.questionId === question.id);
   const updatedPredictions = predictions.map((prediction) => {
@@ -28,10 +61,12 @@ export function settleQuestion(question: Question, predictions: Prediction[]) {
       return prediction;
     }
     const isCorrect = prediction.optionId === question.correctOptionId;
+    const earnedScore = isCorrect ? prediction.finalPayout ?? prediction.potentialPayout ?? question.totalScore : 0;
     return {
       ...prediction,
       isCorrect,
-      earnedScore: isCorrect ? question.totalScore : 0,
+      earnedScore,
+      finalPayout: earnedScore,
     };
   });
   const scoreEvents: ScoreEvent[] = scoped
@@ -41,7 +76,7 @@ export function settleQuestion(question: Question, predictions: Prediction[]) {
       questionId: question.id,
       participantType: prediction.participantType,
       participantId: prediction.participantId,
-      score: question.totalScore,
+      score: prediction.finalPayout ?? prediction.potentialPayout ?? question.totalScore,
       reason: `答对「${question.title}」`,
       createdAt: new Date().toISOString(),
     }));

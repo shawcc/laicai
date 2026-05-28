@@ -5,10 +5,10 @@ const future = (hours: number) => new Date(now + hours * 60 * 60 * 1000).toISOSt
 const past = (hours: number) => new Date(now - hours * 60 * 60 * 1000).toISOString();
 
 export const initialUsers: HumanUser[] = [
-  { id: 'u-1', name: '北看台阿岚', avatarColor: '#16A34A', totalScore: 0 },
-  { id: 'u-2', name: '战术板小陈', avatarColor: '#38BDF8', totalScore: 0 },
-  { id: 'u-3', name: '金靴猎手', avatarColor: '#F2C14E', totalScore: 0 },
-  { id: 'u-4', name: '补时狂人', avatarColor: '#EF4444', totalScore: 0 },
+  { id: 'u-1', name: '北看台阿岚', avatarColor: '#16A34A', totalScore: 0, availablePoints: 500, battleScore: 0 },
+  { id: 'u-2', name: '战术板小陈', avatarColor: '#38BDF8', totalScore: 0, availablePoints: 420, battleScore: 0 },
+  { id: 'u-3', name: '金靴猎手', avatarColor: '#F2C14E', totalScore: 0, availablePoints: 680, battleScore: 0 },
+  { id: 'u-4', name: '补时狂人', avatarColor: '#EF4444', totalScore: 0, availablePoints: 350, battleScore: 0 },
 ];
 
 export const initialAiPlayers: AiPlayer[] = [
@@ -91,7 +91,7 @@ export const initialQuestions: Question[] = [
 ];
 
 export const initialPredictions: Prediction[] = [
-  { id: 'p-1', questionId: 'q-1', participantType: 'human', participantId: 'u-1', optionId: 'q1-a', submittedAt: past(2) },
+  { id: 'p-1', questionId: 'q-1', participantType: 'human', participantId: 'u-1', optionId: 'q1-a', submittedAt: past(2), stakePoints: 50, timeMultiplier: 1.25, difficultyMultiplier: 1.4, potentialPayout: 88 },
   { id: 'p-2', questionId: 'q-1', participantType: 'human', participantId: 'u-2', optionId: 'q1-c', submittedAt: past(2) },
   { id: 'p-3', questionId: 'q-1', participantType: 'human', participantId: 'u-3', optionId: 'q1-a', submittedAt: past(1) },
   { id: 'p-4', questionId: 'q-2', participantType: 'human', participantId: 'u-1', optionId: 'q2-a', submittedAt: past(5) },

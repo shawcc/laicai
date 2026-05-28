@@ -9,6 +9,8 @@ type ProfileRow = {
   avatar_url: string | null;
   favorite_team: string | null;
   total_score: number;
+  available_points: number | null;
+  battle_score: number | null;
 };
 
 type QuestionRow = {
@@ -42,6 +44,11 @@ type PredictionRow = {
   submitted_at: string;
   is_correct: boolean | null;
   earned_score: number | null;
+  stake_points: number | null;
+  time_multiplier: number | null;
+  difficulty_multiplier: number | null;
+  potential_payout: number | null;
+  final_payout: number | null;
 };
 
 type AiPlayerRow = {
@@ -85,6 +92,8 @@ function mapProfiles(rows: ProfileRow[]): HumanUser[] {
     name: row.nickname,
     avatarColor: colorFromText(row.nickname),
     totalScore: row.total_score,
+    availablePoints: row.available_points ?? 500,
+    battleScore: row.battle_score ?? row.total_score,
   }));
 }
 
@@ -100,6 +109,11 @@ function mapPredictions(rows: PredictionRow[]): Prediction[] {
     submittedAt: row.submitted_at,
     isCorrect: row.is_correct ?? undefined,
     earnedScore: row.earned_score ?? undefined,
+    stakePoints: row.stake_points ?? undefined,
+    timeMultiplier: row.time_multiplier ?? undefined,
+    difficultyMultiplier: row.difficulty_multiplier ?? undefined,
+    potentialPayout: row.potential_payout ?? undefined,
+    finalPayout: row.final_payout ?? undefined,
   }));
 }
 
@@ -192,7 +206,7 @@ export async function fetchGameSnapshot(): Promise<GameSnapshot> {
 
   const [profilesResult, questionsResult, optionsResult, predictionsResult, aiPlayersResult, scoreEventsResult] =
     await Promise.all([
-      supabase.from('profiles').select('id, nickname, avatar_url, favorite_team, total_score'),
+      supabase.from('profiles').select('id, nickname, avatar_url, favorite_team, total_score, available_points, battle_score'),
       supabase
         .from('questions')
         .select('id, title, match_label, category, status, lock_at, created_at, correct_option_id, human_participant_count, total_score')
@@ -200,7 +214,7 @@ export async function fetchGameSnapshot(): Promise<GameSnapshot> {
       supabase.from('question_options').select('id, question_id, label, description'),
       supabase
         .from('predictions')
-        .select('id, question_id, participant_type, participant_id, option_id, confidence, reasoning, submitted_at, is_correct, earned_score'),
+        .select('id, question_id, participant_type, participant_id, option_id, confidence, reasoning, submitted_at, is_correct, earned_score, stake_points, time_multiplier, difficulty_multiplier, potential_payout, final_payout'),
       supabase.from('ai_players').select('id, name, provider, model, enabled'),
       supabase
         .from('score_events')

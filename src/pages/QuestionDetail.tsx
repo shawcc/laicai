@@ -1,8 +1,9 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Bot, CheckCircle2, Lock, Send, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, Bot, CheckCircle2, Coins, Lock, Send, Sparkles } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { VoteBar } from '@/components/VoteBar';
-import { formatCountdown, isQuestionLocked } from '@/lib/gameLogic';
+import { formatCountdown, getDifficultyMultiplier, getPotentialPayout, getTimeMultiplier, isQuestionLocked } from '@/lib/gameLogic';
 import { useGameStore } from '@/store/useGameStore';
 
 export function QuestionDetail() {
@@ -10,8 +11,10 @@ export function QuestionDetail() {
   const questions = useGameStore((state) => state.questions);
   const predictions = useGameStore((state) => state.predictions);
   const aiPlayers = useGameStore((state) => state.aiPlayers);
+  const users = useGameStore((state) => state.users);
   const currentUserId = useGameStore((state) => state.currentUserId);
   const submitPrediction = useGameStore((state) => state.submitPrediction);
+  const [stakePoints, setStakePoints] = useState(50);
   const question = questions.find((item) => item.id === questionId);
 
   if (!question) {
@@ -23,6 +26,8 @@ export function QuestionDetail() {
   );
   const aiPredictions = predictions.filter((prediction) => prediction.questionId === question.id && prediction.participantType === 'ai');
   const locked = isQuestionLocked(question);
+  const currentUser = users.find((user) => user.id === currentUserId);
+  const timeMultiplier = getTimeMultiplier(question.lockAt);
 
   return (
     <div className="space-y-6">
@@ -51,23 +56,51 @@ export function QuestionDetail() {
         <section className="score-card p-5">
           <div className="mb-5 flex items-center justify-between">
             <h2 className="text-xl font-black text-cream">选择你的答案</h2>
-            {locked ? <span className="flex items-center gap-2 text-sm font-bold text-red"><Lock className="h-4 w-4" /> 已锁票</span> : <span className="text-sm text-green">锁票前可修改</span>}
+            {locked || userPrediction ? <span className="flex items-center gap-2 text-sm font-bold text-red"><Lock className="h-4 w-4" /> 已锁定</span> : <span className="text-sm font-bold text-green">提交即锁定，越早倍率越高</span>}
+          </div>
+          <div className="mb-4 grid gap-3 rounded-xl border border-fifaBlue/15 bg-fifaBlue/5 p-4 md:grid-cols-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-ink/45">可用积分</p>
+              <p className="mt-1 flex items-center gap-2 text-2xl font-black text-fifaBlue"><Coins className="h-5 w-5 text-gold" /> {currentUser?.availablePoints ?? 0}</p>
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-ink/45">早鸟倍率</p>
+              <p className="mt-1 text-2xl font-black text-fifaBlue">{timeMultiplier}x</p>
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-ink/45">下注档位</p>
+              <div className="mt-2 flex gap-2">
+                {[10, 50, 100].map((stake) => (
+                  <button
+                    key={stake}
+                    onClick={() => setStakePoints(stake)}
+                    disabled={Boolean(userPrediction) || locked}
+                    className={`rounded-sm border px-3 py-1.5 text-sm font-black ${stakePoints === stake ? 'border-fifaBlue bg-fifaBlue text-white' : 'border-ink/10 bg-white text-ink/70'}`}
+                  >
+                    {stake}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="grid gap-3">
             {question.options.map((option) => {
               const selected = userPrediction?.optionId === option.id;
               const correct = question.correctOptionId === option.id;
+              const difficultyMultiplier = getDifficultyMultiplier(predictions, question, option.id);
+              const potentialPayout = getPotentialPayout(stakePoints, timeMultiplier, difficultyMultiplier);
               return (
                 <button
                   key={option.id}
-                  onClick={() => submitPrediction(question.id, option.id)}
-                  disabled={locked}
+                  onClick={() => submitPrediction(question.id, option.id, stakePoints)}
+                  disabled={locked || Boolean(userPrediction)}
                   className={`rounded-xl border p-5 text-left transition ${selected ? 'border-gold bg-gold/15 shadow-lg shadow-gold/10' : 'border-ink/15 bg-ink/5 hover:border-green/40 hover:bg-green/10'} ${locked ? 'cursor-not-allowed opacity-75' : ''}`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-lg font-black text-cream">{option.label}</p>
                       <p className="mt-1 text-sm text-ink/65">{option.description}</p>
+                      <p className="mt-3 text-xs font-black text-fifaPurple">难度 {difficultyMultiplier}x · 潜在收益 +{potentialPayout}</p>
                     </div>
                     {correct && <CheckCircle2 className="h-6 w-6 text-gold" />}
                     {selected && !correct && <Send className="h-5 w-5 text-gold" />}

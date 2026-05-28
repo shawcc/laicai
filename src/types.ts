@@ -28,6 +28,8 @@ export interface HumanUser {
   name: string;
   avatarColor: string;
   totalScore: number;
+  availablePoints: number;
+  battleScore: number;
 }
 
 export interface AiPlayer {
@@ -52,6 +54,11 @@ export interface Prediction {
   submittedAt: string;
   isCorrect?: boolean;
   earnedScore?: number;
+  stakePoints?: number;
+  timeMultiplier?: number;
+  difficultyMultiplier?: number;
+  potentialPayout?: number;
+  finalPayout?: number;
 }
 
 export interface ScoreEvent {

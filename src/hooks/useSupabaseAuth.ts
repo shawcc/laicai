@@ -28,7 +28,12 @@ async function ensureProfile(user: User) {
     id: user.id,
     nickname: getNickname(user),
     avatar_url: typeof user.user_metadata?.avatar_url === 'string' ? user.user_metadata.avatar_url : null,
+    available_points: 500,
+    battle_score: 0,
     updated_at: new Date().toISOString(),
+  }, {
+    onConflict: 'id',
+    ignoreDuplicates: true,
   });
 }
 

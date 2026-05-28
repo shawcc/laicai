@@ -6,6 +6,10 @@ create table if not exists public.profiles (
   avatar_url text,
   favorite_team text,
   total_score integer not null default 0,
+  available_points integer not null default 500,
+  battle_score integer not null default 0,
+  invite_code text unique,
+  invited_by uuid references public.profiles(id),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -46,6 +50,11 @@ create table if not exists public.predictions (
   is_correct boolean,
   earned_score integer,
   submitted_at timestamptz not null default now(),
+  stake_points integer not null default 0,
+  time_multiplier numeric not null default 1,
+  difficulty_multiplier numeric not null default 1,
+  potential_payout integer not null default 0,
+  final_payout integer,
   unique(question_id, participant_type, participant_id)
 );
 
@@ -96,6 +105,38 @@ create table if not exists public.share_cards (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.point_transactions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  amount integer not null,
+  balance_after integer,
+  type text not null,
+  reason text not null,
+  ref_table text,
+  ref_id text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.invites (
+  id uuid primary key default gen_random_uuid(),
+  inviter_id uuid not null references auth.users(id) on delete cascade,
+  invitee_id uuid references auth.users(id) on delete set null,
+  invite_code text not null,
+  status text not null default 'pending',
+  reward_points integer not null default 0,
+  created_at timestamptz not null default now(),
+  completed_at timestamptz
+);
+
+create table if not exists public.daily_checkins (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  checkin_date date not null default current_date,
+  reward_points integer not null default 50,
+  created_at timestamptz not null default now(),
+  unique(user_id, checkin_date)
+);
+
 alter table public.profiles enable row level security;
 alter table public.questions enable row level security;
 alter table public.question_options enable row level security;
@@ -105,6 +146,9 @@ alter table public.evidence_packages enable row level security;
 alter table public.score_events enable row level security;
 alter table public.feature_flags enable row level security;
 alter table public.share_cards enable row level security;
+alter table public.point_transactions enable row level security;
+alter table public.invites enable row level security;
+alter table public.daily_checkins enable row level security;
 
 create policy "profiles are public readable" on public.profiles for select using (true);
 create policy "users insert own profile" on public.profiles for insert with check (auth.uid() = id);
@@ -116,6 +160,11 @@ create policy "evidence readable" on public.evidence_packages for select using (
 create policy "score events readable" on public.score_events for select using (true);
 create policy "feature flags readable" on public.feature_flags for select using (true);
 create policy "share cards readable" on public.share_cards for select using (true);
+create policy "users read own point transactions" on public.point_transactions for select using (auth.uid() = user_id);
+create policy "users read related invites" on public.invites for select using (auth.uid() = inviter_id or auth.uid() = invitee_id);
+create policy "users create own invites" on public.invites for insert with check (auth.uid() = inviter_id);
+create policy "users read own checkins" on public.daily_checkins for select using (auth.uid() = user_id);
+create policy "users create own checkins" on public.daily_checkins for insert with check (auth.uid() = user_id);
 
 create policy "predictions are public readable" on public.predictions
   for select using (true);
