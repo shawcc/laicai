@@ -1,4 +1,7 @@
-import type { AiPlayer, BoardEntry, HumanUser, Prediction, Question, ScoreEvent } from '@/types';
+import type { AgentCostEvent, AgentPortfolio, AgentPosition, AiPlayer, BoardEntry, HumanUser, Prediction, Question, ScoreEvent } from '@/types';
+
+export const AGENT_INITIAL_BUDGET = 10000;
+export const CNY_TO_VIRTUAL_POINTS = 100;
 
 export function getQuestionTotalScore(predictions: Prediction[], questionId: string) {
   return new Set(
@@ -106,6 +109,50 @@ export function buildLeaderboard(users: HumanUser[], aiPlayers: AiPlayer[], scor
   }));
 
   return [...humanRows, ...aiRows].sort((a, b) => b.score - a.score);
+}
+
+export function buildAgentPortfolios(
+  aiPlayers: AiPlayer[],
+  positions: AgentPosition[],
+  costEvents: AgentCostEvent[],
+): AgentPortfolio[] {
+  return aiPlayers
+    .map((ai) => {
+      const scopedPositions = positions.filter((position) => position.aiPlayerId === ai.id);
+      const scopedCosts = costEvents.filter((event) => event.aiPlayerId === ai.id);
+      const allocatedBudget = scopedPositions.reduce((sum, position) => sum + position.allocatedPoints, 0);
+      const settledPayout = scopedPositions.reduce((sum, position) => sum + (position.payoutPoints ?? 0), 0);
+      const remainingBudget = AGENT_INITIAL_BUDGET - allocatedBudget;
+      const grossValue = remainingBudget + settledPayout + scopedPositions
+        .filter((position) => position.status === 'open')
+        .reduce((sum, position) => sum + position.allocatedPoints, 0);
+      const grossProfit = grossValue - AGENT_INITIAL_BUDGET;
+      const tokenCostCny = scopedCosts.reduce((sum, event) => sum + event.costCny, 0);
+      const tokenCostPoints = Math.round(tokenCostCny * CNY_TO_VIRTUAL_POINTS);
+      const netValue = grossValue - tokenCostPoints;
+      const netProfit = netValue - AGENT_INITIAL_BUDGET;
+
+      return {
+        aiPlayerId: ai.id,
+        initialBudget: AGENT_INITIAL_BUDGET,
+        allocatedBudget,
+        remainingBudget,
+        settledPayout,
+        grossValue,
+        grossProfit,
+        roi: grossProfit / AGENT_INITIAL_BUDGET,
+        tokenCostCny,
+        tokenCostPoints,
+        netValue,
+        netProfit,
+        netRoi: netProfit / AGENT_INITIAL_BUDGET,
+      };
+    })
+    .sort((a, b) => b.netValue - a.netValue);
+}
+
+export function formatPercent(value: number) {
+  return `${value >= 0 ? '+' : ''}${(value * 100).toFixed(1)}%`;
 }
 
 export function formatCountdown(lockAt: string) {

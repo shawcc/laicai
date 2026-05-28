@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Bot, CheckCircle2, Clock3, Lock, Send, Sparkles } from 'lucide-react';
+import { ArrowLeft, Bot, CheckCircle2, Clock3, Lock, Send, Sparkles, WalletCards } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { VoteBar } from '@/components/VoteBar';
 import { formatCountdown, isQuestionLocked } from '@/lib/gameLogic';
@@ -10,6 +10,8 @@ export function QuestionDetail() {
   const questions = useGameStore((state) => state.questions);
   const predictions = useGameStore((state) => state.predictions);
   const aiPlayers = useGameStore((state) => state.aiPlayers);
+  const agentPositions = useGameStore((state) => state.agentPositions);
+  const agentCostEvents = useGameStore((state) => state.agentCostEvents);
   const currentUserId = useGameStore((state) => state.currentUserId);
   const submitPrediction = useGameStore((state) => state.submitPrediction);
   const question = questions.find((item) => item.id === questionId);
@@ -22,6 +24,7 @@ export function QuestionDetail() {
     (prediction) => prediction.questionId === question.id && prediction.participantType === 'human' && prediction.participantId === currentUserId,
   );
   const aiPredictions = predictions.filter((prediction) => prediction.questionId === question.id && prediction.participantType === 'ai');
+  const scopedPositions = agentPositions.filter((position) => position.questionId === question.id);
   const locked = isQuestionLocked(question);
   const communityPredictions = predictions.filter((prediction) => prediction.questionId === question.id && prediction.participantType === 'human');
 
@@ -128,6 +131,37 @@ export function QuestionDetail() {
           })}
         </div>
       </section>
+
+      <section className="score-card p-5">
+        <div className="mb-5 flex items-center gap-2">
+          <WalletCards className="h-5 w-5 text-gold" />
+          <h2 className="text-xl font-black text-cream">Agent 虚拟仓位轨迹</h2>
+        </div>
+        <div className="grid gap-3">
+          {scopedPositions.map((position) => {
+            const ai = aiPlayers.find((item) => item.id === position.aiPlayerId);
+            const option = question.options.find((item) => item.id === position.optionId);
+            const cost = agentCostEvents
+              .filter((event) => event.aiPlayerId === position.aiPlayerId && event.questionId === question.id)
+              .reduce((sum, event) => sum + event.costCny, 0);
+            return (
+              <article key={position.id} className="rounded-sm border border-ink/10 bg-white p-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="font-black text-ink">{ai?.name}</p>
+                    <p className="mt-1 text-sm font-bold text-ink/55">选择 {option?.label} · 置信度 {position.confidence}% · 成本 ¥{cost.toFixed(2)}</p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <Mini label="分配" value={position.allocatedPoints.toLocaleString()} />
+                    <Mini label="倍率" value={`${(position.timeMultiplier * position.oddsMultiplier).toFixed(2)}x`} />
+                    <Mini label="状态" value={position.status === 'settled' ? `${position.payoutPoints ?? 0}` : '未结算'} />
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }
@@ -137,6 +171,15 @@ function Info({ label, value }: { label: string; value: string }) {
     <div className="rounded-xl bg-ink/5 p-4">
       <p className="text-xs uppercase tracking-[0.25em] text-cream/40">{label}</p>
       <p className="mt-2 text-2xl font-black text-gold">{value}</p>
+    </div>
+  );
+}
+
+function Mini({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-sm bg-fifaBlue/5 px-3 py-2">
+      <p className="text-xs font-black text-ink/45">{label}</p>
+      <p className="mt-1 font-black text-fifaBlue">{value}</p>
     </div>
   );
 }

@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import { initialAiPlayers, initialPredictions, initialQuestions, initialScoreEvents, initialUsers } from '@/data/mockData';
+import { initialAgentCostEvents, initialAgentPositions, initialAiPlayers, initialPredictions, initialQuestions, initialScoreEvents, initialUsers } from '@/data/mockData';
 import { getQuestionTotalScore, settleQuestion } from '@/lib/gameLogic';
 import { fetchGameSnapshot } from '@/lib/supabaseData';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import type { AiPlayer, HumanUser, Prediction, Question, QuestionCategory, ScoreEvent } from '@/types';
+import type { AgentCostEvent, AgentPosition, AiPlayer, HumanUser, Prediction, Question, QuestionCategory, ScoreEvent } from '@/types';
 
 type NewQuestionInput = {
   title: string;
@@ -20,6 +20,8 @@ type GameState = {
   questions: Question[];
   predictions: Prediction[];
   scoreEvents: ScoreEvent[];
+  agentPositions: AgentPosition[];
+  agentCostEvents: AgentCostEvent[];
   dataSource: 'mock' | 'supabase';
   isHydrating: boolean;
   hydrationError?: string;
@@ -54,6 +56,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   questions: initialQuestions,
   predictions: initialPredictions,
   scoreEvents: initialScoreEvents,
+  agentPositions: initialAgentPositions,
+  agentCostEvents: initialAgentCostEvents,
   dataSource: 'mock',
   isHydrating: false,
 
@@ -81,6 +85,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         questions: snapshot.questions,
         predictions: snapshot.predictions,
         scoreEvents: snapshot.scoreEvents,
+        agentPositions: snapshot.agentPositions,
+        agentCostEvents: snapshot.agentCostEvents,
         dataSource: snapshot.source,
         isHydrating: false,
         hydrationError: undefined,

@@ -1,9 +1,9 @@
-import { Bot, BrainCircuit, CalendarDays, Flame, Lock, SearchCheck, Trophy, Users } from 'lucide-react';
+import { Bot, BrainCircuit, CalendarDays, Flame, Lock, SearchCheck, Trophy, Users, WalletCards } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { QuestionCard } from '@/components/QuestionCard';
 import { PublicAiBrief } from '@/components/PublicAiBrief';
 import { StatCard } from '@/components/StatCard';
-import { buildLeaderboard } from '@/lib/gameLogic';
+import { AGENT_INITIAL_BUDGET, buildAgentPortfolios, buildLeaderboard, formatPercent } from '@/lib/gameLogic';
 import { useGameStore } from '@/store/useGameStore';
 import type { QuestionStatus } from '@/types';
 
@@ -38,6 +38,8 @@ export function Home() {
   const aiPlayers = useGameStore((state) => state.aiPlayers);
   const users = useGameStore((state) => state.users);
   const scoreEvents = useGameStore((state) => state.scoreEvents);
+  const agentPositions = useGameStore((state) => state.agentPositions);
+  const agentCostEvents = useGameStore((state) => state.agentCostEvents);
   const runAiDraft = useGameStore((state) => state.runAiDraft);
   const lockExpiredQuestions = useGameStore((state) => state.lockExpiredQuestions);
   const [filter, setFilter] = useState<'all' | QuestionStatus>('all');
@@ -50,7 +52,9 @@ export function Home() {
   const agentPredictions = predictions.filter((prediction) => prediction.participantType === 'ai').length;
   const leaderboard = useMemo(() => buildLeaderboard(users, aiPlayers, scoreEvents), [users, aiPlayers, scoreEvents]);
   const agentBoard = leaderboard.filter((entry) => entry.kind === 'ai');
-  const leadingAgent = agentBoard[0];
+  const portfolios = useMemo(() => buildAgentPortfolios(aiPlayers, agentPositions, agentCostEvents), [aiPlayers, agentPositions, agentCostEvents]);
+  const leadingPortfolio = portfolios[0];
+  const leadingAgent = aiPlayers.find((ai) => ai.id === leadingPortfolio?.aiPlayerId);
   const latestAgentPredictions = predictions
     .filter((prediction) => prediction.participantType === 'ai')
     .slice(-4)
@@ -79,34 +83,37 @@ export function Home() {
           </div>
           <div className="grid gap-4">
             <div className="rounded-sm border border-white/25 bg-white p-5 text-ink shadow-2xl shadow-black/10">
-              <p className="text-xs font-black uppercase tracking-[0.32em] text-fifaPurple">Current Leader</p>
+              <p className="text-xs font-black uppercase tracking-[0.32em] text-fifaPurple">Portfolio Leader</p>
               <div className="mt-4 flex items-center gap-4">
                 <div className="grid h-16 w-16 place-items-center rounded-sm bg-sun text-fifaBlue">
-                  <Trophy className="h-8 w-8" />
+                  <WalletCards className="h-8 w-8" />
                 </div>
                 <div>
                   <h3 className="text-3xl font-black text-ink">{leadingAgent?.name ?? '等待 Agent 出战'}</h3>
-                  <p className="mt-1 text-sm font-bold text-ink/55">{leadingAgent?.meta ?? '启动任务后生成榜单'}</p>
+                  <p className="mt-1 text-sm font-bold text-ink/55">初始虚拟预算 {AGENT_INITIAL_BUDGET.toLocaleString()} · 成本调整后排名</p>
                 </div>
               </div>
               <div className="mt-5 grid grid-cols-3 gap-3">
-                <MiniMetric label="评测分" value={leadingAgent?.score ?? 0} />
-                <MiniMetric label="Agent 预测" value={agentPredictions} />
-                <MiniMetric label="任务数" value={questions.length} />
+                <MiniMetric label="净值" value={leadingPortfolio?.netValue.toLocaleString() ?? 0} />
+                <MiniMetric label="净 ROI" value={leadingPortfolio ? formatPercent(leadingPortfolio.netRoi) : '0%'} />
+                <MiniMetric label="模型成本" value={`¥${(leadingPortfolio?.tokenCostCny ?? 0).toFixed(2)}`} />
               </div>
             </div>
             <div className="rounded-sm border border-white/25 bg-night/65 p-5 backdrop-blur">
               <p className="mb-3 text-sm font-black uppercase tracking-[0.28em] text-white/70">Top Agents</p>
               <div className="grid gap-2">
-                {agentBoard.slice(0, 4).map((entry, index) => (
-                  <div key={entry.id} className="flex items-center justify-between gap-3 rounded-sm bg-white px-3 py-2 text-ink">
+                {portfolios.slice(0, 4).map((portfolio, index) => {
+                  const ai = aiPlayers.find((item) => item.id === portfolio.aiPlayerId);
+                  return (
+                  <div key={portfolio.aiPlayerId} className="flex items-center justify-between gap-3 rounded-sm bg-white px-3 py-2 text-ink">
                     <div className="flex min-w-0 items-center gap-3">
                       <span className="grid h-7 w-7 place-items-center rounded-sm bg-fifaBlue text-xs font-black text-white">{index + 1}</span>
-                      <span className="truncate font-black">{entry.name}</span>
+                      <span className="truncate font-black">{ai?.name}</span>
                     </div>
-                    <span className="font-black text-gold">{entry.score}</span>
+                    <span className="font-black text-gold">{portfolio.netValue.toLocaleString()}</span>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -117,28 +124,31 @@ export function Home() {
         <StatCard label="开放任务" value={questions.filter((q) => q.status === 'open').length} icon={Flame} accent="#14B86A" />
         <StatCard label="Agent 预测" value={agentPredictions} icon={SearchCheck} accent="#FFB703" />
         <StatCard label="观察投票" value={communityVotes} icon={Users} accent="#2A9DF4" />
-        <StatCard label="AI 选手" value={aiPlayers.length} icon={Bot} accent="#F25F4C" />
+        <StatCard label="虚拟预算" value={AGENT_INITIAL_BUDGET} icon={WalletCards} accent="#F25F4C" />
       </section>
 
       <section className="grid gap-5 lg:grid-cols-[1fr_1fr]">
         <div className="score-card p-5">
           <div className="flex items-center gap-2">
             <Trophy className="h-5 w-5 text-gold" />
-            <h2 className="text-xl font-black text-cream">Agent 实时排行榜</h2>
+            <h2 className="text-xl font-black text-cream">Agent 虚拟净值榜</h2>
           </div>
           <div className="mt-5 divide-y divide-ink/10">
-            {agentBoard.slice(0, 6).map((entry, index) => (
-              <div key={entry.id} className="flex items-center justify-between gap-4 py-3">
+            {portfolios.slice(0, 6).map((portfolio, index) => {
+              const ai = aiPlayers.find((item) => item.id === portfolio.aiPlayerId);
+              return (
+              <div key={portfolio.aiPlayerId} className="flex items-center justify-between gap-4 py-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <div className={`grid h-10 w-10 place-items-center rounded-sm font-black ${index < 3 ? 'bg-sun text-fifaBlue' : 'bg-ink/5 text-cream'}`}>{index + 1}</div>
                   <div className="min-w-0">
-                    <p className="truncate font-black text-cream">{entry.name}</p>
-                    <p className="truncate text-sm text-ink/60">{entry.meta}</p>
+                    <p className="truncate font-black text-cream">{ai?.name}</p>
+                    <p className="truncate text-sm text-ink/60">净 ROI {formatPercent(portfolio.netRoi)} · 成本 ¥{portfolio.tokenCostCny.toFixed(2)}</p>
                   </div>
                 </div>
-                <p className="text-2xl font-black text-gold">{entry.score}</p>
+                <p className="text-2xl font-black text-gold">{portfolio.netValue.toLocaleString()}</p>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

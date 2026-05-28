@@ -1,4 +1,4 @@
-import type { AiPlayer, HumanUser, Prediction, Question, ScoreEvent } from '@/types';
+import type { AgentCostEvent, AgentPosition, AiPlayer, HumanUser, Prediction, Question, ScoreEvent } from '@/types';
 
 const now = Date.now();
 const future = (hours: number) => new Date(now + hours * 60 * 60 * 1000).toISOString();
@@ -113,8 +113,30 @@ export const initialPredictions: Prediction[] = [
 ];
 
 export const initialScoreEvents: ScoreEvent[] = [
-  { id: 's-1', questionId: 'q-4', participantType: 'human', participantId: 'u-1', score: 4, reason: '答对「法国 vs 韩国最终胜者是谁？」', createdAt: past(24) },
-  { id: 's-2', questionId: 'q-4', participantType: 'human', participantId: 'u-3', score: 4, reason: '答对「法国 vs 韩国最终胜者是谁？」', createdAt: past(24) },
-  { id: 's-3', questionId: 'q-4', participantType: 'ai', participantId: 'ai-gpt', score: 4, reason: '答对「法国 vs 韩国最终胜者是谁？」', createdAt: past(24) },
-  { id: 's-4', questionId: 'q-4', participantType: 'ai', participantId: 'ai-gemini', score: 4, reason: '答对「法国 vs 韩国最终胜者是谁？」', createdAt: past(24) },
+  { id: 's-1', questionId: 'q-4', participantType: 'human', participantId: 'u-1', score: 4, reason: '命中预测任务「法国 vs 韩国最终胜者是谁？」', createdAt: past(24) },
+  { id: 's-2', questionId: 'q-4', participantType: 'human', participantId: 'u-3', score: 4, reason: '命中预测任务「法国 vs 韩国最终胜者是谁？」', createdAt: past(24) },
+  { id: 's-3', questionId: 'q-4', participantType: 'ai', participantId: 'ai-gpt', score: 4, reason: '命中预测任务「法国 vs 韩国最终胜者是谁？」', createdAt: past(24) },
+  { id: 's-4', questionId: 'q-4', participantType: 'ai', participantId: 'ai-gemini', score: 4, reason: '命中预测任务「法国 vs 韩国最终胜者是谁？」', createdAt: past(24) },
+];
+
+export const initialAgentPositions: AgentPosition[] = [
+  { id: 'pos-1', questionId: 'q-4', aiPlayerId: 'ai-gpt', optionId: 'q4-a', allocatedPoints: 1600, confidence: 81, submittedAt: past(36), timeMultiplier: 1.45, oddsMultiplier: 1.35, status: 'settled', payoutPoints: 3132 },
+  { id: 'pos-2', questionId: 'q-4', aiPlayerId: 'ai-gemini', optionId: 'q4-a', allocatedPoints: 1100, confidence: 76, submittedAt: past(34), timeMultiplier: 1.35, oddsMultiplier: 1.35, status: 'settled', payoutPoints: 2005 },
+  { id: 'pos-3', questionId: 'q-4', aiPlayerId: 'ai-claude', optionId: 'q4-c', allocatedPoints: 600, confidence: 54, submittedAt: past(33), timeMultiplier: 1.3, oddsMultiplier: 2.1, status: 'settled', payoutPoints: 0 },
+  { id: 'pos-4', questionId: 'q-1', aiPlayerId: 'ai-gpt', optionId: 'q1-a', allocatedPoints: 900, confidence: 78, submittedAt: past(3), timeMultiplier: 1.25, oddsMultiplier: 1.4, status: 'open' },
+  { id: 'pos-5', questionId: 'q-1', aiPlayerId: 'ai-claude', optionId: 'q1-c', allocatedPoints: 700, confidence: 61, submittedAt: past(2), timeMultiplier: 1.2, oddsMultiplier: 2.2, status: 'open' },
+  { id: 'pos-6', questionId: 'q-2', aiPlayerId: 'ai-doubao', optionId: 'q2-b', allocatedPoints: 850, confidence: 64, submittedAt: past(2), timeMultiplier: 1.4, oddsMultiplier: 1.8, status: 'open' },
+  { id: 'pos-7', questionId: 'q-3', aiPlayerId: 'ai-deepseek', optionId: 'q3-a', allocatedPoints: 1200, confidence: 72, submittedAt: past(9), timeMultiplier: 1.1, oddsMultiplier: 1.55, status: 'open' },
+  { id: 'pos-8', questionId: 'q-1', aiPlayerId: 'ai-kimi', optionId: 'q1-b', allocatedPoints: 500, confidence: 47, submittedAt: past(1), timeMultiplier: 1.15, oddsMultiplier: 3.0, status: 'open' },
+];
+
+export const initialAgentCostEvents: AgentCostEvent[] = [
+  { id: 'cost-1', aiPlayerId: 'ai-gpt', questionId: 'q-4', provider: 'OpenAI', model: 'gpt-4o', inputTokens: 24000, outputTokens: 3200, costCny: 2.86, createdAt: past(36) },
+  { id: 'cost-2', aiPlayerId: 'ai-gpt', questionId: 'q-1', provider: 'OpenAI', model: 'gpt-4o', inputTokens: 16800, outputTokens: 2100, costCny: 1.92, createdAt: past(3) },
+  { id: 'cost-3', aiPlayerId: 'ai-claude', questionId: 'q-4', provider: 'Anthropic', model: 'claude-3.5', inputTokens: 21000, outputTokens: 2800, costCny: 2.35, createdAt: past(33) },
+  { id: 'cost-4', aiPlayerId: 'ai-claude', questionId: 'q-1', provider: 'Anthropic', model: 'claude-3.5', inputTokens: 11200, outputTokens: 1900, costCny: 1.41, createdAt: past(2) },
+  { id: 'cost-5', aiPlayerId: 'ai-gemini', questionId: 'q-4', provider: 'Google', model: 'gemini-1.5', inputTokens: 18000, outputTokens: 2200, costCny: 1.08, createdAt: past(34) },
+  { id: 'cost-6', aiPlayerId: 'ai-doubao', questionId: 'q-2', provider: '字节跳动', model: 'doubao-pro', inputTokens: 12800, outputTokens: 1600, costCny: 0.42, createdAt: past(2) },
+  { id: 'cost-7', aiPlayerId: 'ai-deepseek', questionId: 'q-3', provider: 'DeepSeek', model: 'deepseek-chat', inputTokens: 14600, outputTokens: 2400, costCny: 0.36, createdAt: past(9) },
+  { id: 'cost-8', aiPlayerId: 'ai-kimi', questionId: 'q-1', provider: 'Moonshot', model: 'kimi-k2', inputTokens: 19600, outputTokens: 2600, costCny: 0.82, createdAt: past(1) },
 ];

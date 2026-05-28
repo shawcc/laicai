@@ -71,6 +71,50 @@ export interface ScoreEvent {
   createdAt: string;
 }
 
+export type AgentPositionStatus = 'open' | 'settled' | 'voided';
+
+export interface AgentPosition {
+  id: string;
+  questionId: string;
+  aiPlayerId: string;
+  optionId: string;
+  allocatedPoints: number;
+  confidence: number;
+  submittedAt: string;
+  timeMultiplier: number;
+  oddsMultiplier: number;
+  status: AgentPositionStatus;
+  payoutPoints?: number;
+}
+
+export interface AgentCostEvent {
+  id: string;
+  aiPlayerId: string;
+  questionId?: string;
+  provider: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  costCny: number;
+  createdAt: string;
+}
+
+export interface AgentPortfolio {
+  aiPlayerId: string;
+  initialBudget: number;
+  allocatedBudget: number;
+  remainingBudget: number;
+  settledPayout: number;
+  grossValue: number;
+  grossProfit: number;
+  roi: number;
+  tokenCostCny: number;
+  tokenCostPoints: number;
+  netValue: number;
+  netProfit: number;
+  netRoi: number;
+}
+
 export type BoardEntry = {
   id: string;
   name: string;

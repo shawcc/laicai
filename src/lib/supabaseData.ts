@@ -1,7 +1,7 @@
-import { initialAiPlayers, initialPredictions, initialQuestions, initialScoreEvents, initialUsers } from '@/data/mockData';
+import { initialAgentCostEvents, initialAgentPositions, initialAiPlayers, initialPredictions, initialQuestions, initialScoreEvents, initialUsers } from '@/data/mockData';
 import { getQuestionTotalScore } from '@/lib/gameLogic';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import type { AiPlayer, HumanUser, Prediction, Question, QuestionOption, ScoreEvent } from '@/types';
+import type { AgentCostEvent, AgentPosition, AiPlayer, HumanUser, Prediction, Question, QuestionOption, ScoreEvent } from '@/types';
 
 type ProfileRow = {
   id: string;
@@ -76,6 +76,8 @@ export type GameSnapshot = {
   questions: Question[];
   predictions: Prediction[];
   scoreEvents: ScoreEvent[];
+  agentPositions: AgentPosition[];
+  agentCostEvents: AgentCostEvent[];
   source: 'mock' | 'supabase';
 };
 
@@ -195,6 +197,8 @@ export function getMockSnapshot(): GameSnapshot {
     questions: initialQuestions,
     predictions: initialPredictions,
     scoreEvents: initialScoreEvents,
+    agentPositions: initialAgentPositions,
+    agentCostEvents: initialAgentCostEvents,
     source: 'mock',
   };
 }
@@ -256,6 +260,8 @@ export async function fetchGameSnapshot(): Promise<GameSnapshot> {
     questions,
     predictions,
     scoreEvents,
+    agentPositions: [],
+    agentCostEvents: [],
     source: 'supabase',
   };
 }
