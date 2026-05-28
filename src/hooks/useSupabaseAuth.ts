@@ -19,6 +19,10 @@ function getNickname(user: User) {
   return user.email?.split('@')[0] || '世界杯玩家';
 }
 
+function getAuthRedirectUrl() {
+  return import.meta.env.VITE_AUTH_REDIRECT_URL || `${window.location.origin}/auth/callback`;
+}
+
 async function ensureProfile(user: User) {
   if (!supabase) {
     return;
@@ -94,7 +98,7 @@ export function useSupabaseAuth(): AuthState {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: getAuthRedirectUrl(),
       },
     });
     setIsAuthLoading(false);

@@ -19,6 +19,21 @@ export function AuthCallback() {
       const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
 
+      if (window.location.hash.includes('access_token=')) {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          setStatus('error');
+          setMessage(error.message);
+          return;
+        }
+        if (data.session) {
+          setStatus('success');
+          setMessage('登录成功，正在返回首页...');
+          window.setTimeout(() => navigate('/', { replace: true }), 800);
+          return;
+        }
+      }
+
       if (!code) {
         const { data } = await supabase.auth.getSession();
         if (data.session) {
