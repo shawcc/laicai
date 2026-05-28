@@ -1,8 +1,9 @@
-import { Bot, CalendarDays, Flame, Lock, SearchCheck, Users } from 'lucide-react';
+import { Bot, BrainCircuit, CalendarDays, Flame, Lock, SearchCheck, Trophy, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { QuestionCard } from '@/components/QuestionCard';
 import { PublicAiBrief } from '@/components/PublicAiBrief';
 import { StatCard } from '@/components/StatCard';
+import { buildLeaderboard } from '@/lib/gameLogic';
 import { useGameStore } from '@/store/useGameStore';
 import type { QuestionStatus } from '@/types';
 
@@ -13,13 +14,6 @@ const filters: Array<{ label: string; value: 'all' | QuestionStatus }> = [
   { label: '已评测', value: 'settled' },
 ];
 
-const countdownTiles = [
-  { label: 'Days', value: '17' },
-  { label: 'Hours', value: '06' },
-  { label: 'Mins', value: '15' },
-  { label: 'Secs', value: '33' },
-];
-
 const officialHighlights = [
   {
     tag: 'Need to know',
@@ -28,8 +22,8 @@ const officialHighlights = [
   },
   {
     tag: 'Spotlight',
-    title: '公共 AI 情报员先整理依据，再让 Agent 作答',
-    body: '伤停、阵容、赔率、新闻、历史对阵统一进入 Evidence Package，降低黑箱判断。',
+    title: 'Agent 从搜集信息开始比赛',
+    body: '公共信息源只作为基准线；每个 Agent 的检索、筛选、引用和推理能力都会进入评测。',
   },
   {
     tag: 'Fan Moment',
@@ -42,6 +36,8 @@ export function Home() {
   const questions = useGameStore((state) => state.questions);
   const predictions = useGameStore((state) => state.predictions);
   const aiPlayers = useGameStore((state) => state.aiPlayers);
+  const users = useGameStore((state) => state.users);
+  const scoreEvents = useGameStore((state) => state.scoreEvents);
   const runAiDraft = useGameStore((state) => state.runAiDraft);
   const lockExpiredQuestions = useGameStore((state) => state.lockExpiredQuestions);
   const [filter, setFilter] = useState<'all' | QuestionStatus>('all');
@@ -52,38 +48,121 @@ export function Home() {
   );
   const communityVotes = predictions.filter((prediction) => prediction.participantType === 'human').length;
   const agentPredictions = predictions.filter((prediction) => prediction.participantType === 'ai').length;
+  const leaderboard = useMemo(() => buildLeaderboard(users, aiPlayers, scoreEvents), [users, aiPlayers, scoreEvents]);
+  const agentBoard = leaderboard.filter((entry) => entry.kind === 'ai');
+  const leadingAgent = agentBoard[0];
+  const latestAgentPredictions = predictions
+    .filter((prediction) => prediction.participantType === 'ai')
+    .slice(-4)
+    .reverse();
 
   return (
     <div className="space-y-8">
       <section className="poster-panel relative overflow-hidden p-6 lg:p-10">
         <div className="absolute -right-16 bottom-0 hidden h-80 w-80 rounded-sm border-[42px] border-ink/15 lg:block" />
         <div className="absolute right-12 top-12 hidden h-28 w-28 rotate-12 rounded-xl bg-sun shadow-2xl shadow-sun/20 lg:block" />
-        <div className="relative grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
+        <div className="relative grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-stretch">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.5em] text-sun">FIFA World Cup 2026 Inspired</p>
-            <h2 className="mt-4 text-4xl font-black leading-none text-white lg:text-7xl">AI Prediction Cup 2026</h2>
+            <p className="text-xs font-black uppercase tracking-[0.5em] text-sun">Agent Arena 2026</p>
+            <h2 className="mt-4 text-4xl font-black leading-none text-white lg:text-7xl">谁是最会判断世界杯的 AI Agent?</h2>
             <div className="mt-5 flex items-center gap-3 text-white/78">
               <CalendarDays className="h-5 w-5 text-sun" />
               <span className="font-bold">11 June - 19 July 2026</span>
             </div>
             <p className="mt-5 max-w-2xl text-base leading-8 text-white/75">
-              一个短期世界杯 AI Agent 观察站：题目由运营或社群提案产生，Agent 基于公开信息源提交预测，平台追踪命中、置信度和解释质量。
+              这是一个短期实验：让不同 Agent 从搜集公开信息开始，完成检索、筛选、推理和预测，最终用命中率、置信度校准和证据质量排名。
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <button onClick={runAiDraft} className="angled-button bg-sun px-5 py-3 font-black text-night transition hover:brightness-110">启动 Agent 任务</button>
               <button onClick={lockExpiredQuestions} className="angled-button border border-white/25 bg-white/12 px-5 py-3 font-black text-white transition hover:bg-white/20">截止任务巡检</button>
             </div>
           </div>
-          <div className="rounded-xl bg-white/12 p-4 backdrop-blur-md">
-            <p className="mb-3 text-sm font-black uppercase tracking-[0.28em] text-white/70">Countdown</p>
-            <div className="grid grid-cols-4 gap-3">
-              {countdownTiles.map((tile) => (
-                <div key={tile.label} className="rounded-xl bg-white p-4 text-center shadow-xl shadow-black/10">
-                  <p className="text-3xl font-black text-fifaBlue">{tile.value}</p>
-                  <p className="mt-1 text-xs font-bold uppercase text-ink/45">{tile.label}</p>
+          <div className="grid gap-4">
+            <div className="rounded-sm border border-white/25 bg-white p-5 text-ink shadow-2xl shadow-black/10">
+              <p className="text-xs font-black uppercase tracking-[0.32em] text-fifaPurple">Current Leader</p>
+              <div className="mt-4 flex items-center gap-4">
+                <div className="grid h-16 w-16 place-items-center rounded-sm bg-sun text-fifaBlue">
+                  <Trophy className="h-8 w-8" />
                 </div>
-              ))}
+                <div>
+                  <h3 className="text-3xl font-black text-ink">{leadingAgent?.name ?? '等待 Agent 出战'}</h3>
+                  <p className="mt-1 text-sm font-bold text-ink/55">{leadingAgent?.meta ?? '启动任务后生成榜单'}</p>
+                </div>
+              </div>
+              <div className="mt-5 grid grid-cols-3 gap-3">
+                <MiniMetric label="评测分" value={leadingAgent?.score ?? 0} />
+                <MiniMetric label="Agent 预测" value={agentPredictions} />
+                <MiniMetric label="任务数" value={questions.length} />
+              </div>
             </div>
+            <div className="rounded-sm border border-white/25 bg-night/65 p-5 backdrop-blur">
+              <p className="mb-3 text-sm font-black uppercase tracking-[0.28em] text-white/70">Top Agents</p>
+              <div className="grid gap-2">
+                {agentBoard.slice(0, 4).map((entry, index) => (
+                  <div key={entry.id} className="flex items-center justify-between gap-3 rounded-sm bg-white px-3 py-2 text-ink">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="grid h-7 w-7 place-items-center rounded-sm bg-fifaBlue text-xs font-black text-white">{index + 1}</span>
+                      <span className="truncate font-black">{entry.name}</span>
+                    </div>
+                    <span className="font-black text-gold">{entry.score}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="开放任务" value={questions.filter((q) => q.status === 'open').length} icon={Flame} accent="#14B86A" />
+        <StatCard label="Agent 预测" value={agentPredictions} icon={SearchCheck} accent="#FFB703" />
+        <StatCard label="观察投票" value={communityVotes} icon={Users} accent="#2A9DF4" />
+        <StatCard label="AI 选手" value={aiPlayers.length} icon={Bot} accent="#F25F4C" />
+      </section>
+
+      <section className="grid gap-5 lg:grid-cols-[1fr_1fr]">
+        <div className="score-card p-5">
+          <div className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-gold" />
+            <h2 className="text-xl font-black text-cream">Agent 实时排行榜</h2>
+          </div>
+          <div className="mt-5 divide-y divide-ink/10">
+            {agentBoard.slice(0, 6).map((entry, index) => (
+              <div key={entry.id} className="flex items-center justify-between gap-4 py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className={`grid h-10 w-10 place-items-center rounded-sm font-black ${index < 3 ? 'bg-sun text-fifaBlue' : 'bg-ink/5 text-cream'}`}>{index + 1}</div>
+                  <div className="min-w-0">
+                    <p className="truncate font-black text-cream">{entry.name}</p>
+                    <p className="truncate text-sm text-ink/60">{entry.meta}</p>
+                  </div>
+                </div>
+                <p className="text-2xl font-black text-gold">{entry.score}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="score-card p-5">
+          <div className="flex items-center gap-2">
+            <BrainCircuit className="h-5 w-5 text-green" />
+            <h2 className="text-xl font-black text-cream">最新 Agent 判断</h2>
+          </div>
+          <div className="mt-5 grid gap-3">
+            {latestAgentPredictions.map((prediction) => {
+              const ai = aiPlayers.find((item) => item.id === prediction.participantId);
+              const question = questions.find((item) => item.id === prediction.questionId);
+              const option = question?.options.find((item) => item.id === prediction.optionId);
+              return (
+                <article key={prediction.id} className="rounded-sm border border-ink/10 bg-white p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-black text-ink">{ai?.name}</p>
+                    <span className="rounded-sm bg-fifaBlue/10 px-2 py-1 text-xs font-black text-fifaBlue">{prediction.confidence ?? '-'}%</span>
+                  </div>
+                  <p className="mt-2 text-sm font-bold text-ink/60">{question?.title}</p>
+                  <p className="mt-2 text-lg font-black text-fifaPurple">{option?.label}</p>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -101,8 +180,6 @@ export function Home() {
         ))}
       </section>
 
-      <PublicAiBrief />
-
       <section className="rounded-sm border-2 border-fifaBlue bg-white p-5">
         <p className="text-xs font-black uppercase tracking-[0.32em] text-fifaPurple">Product Boundary</p>
         <h2 className="mt-2 text-2xl font-black text-ink">只做 AI 模型观察，不做竞猜服务</h2>
@@ -112,12 +189,7 @@ export function Home() {
         </p>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="开放题目" value={questions.filter((q) => q.status === 'open').length} icon={Flame} accent="#14B86A" />
-        <StatCard label="Agent 预测" value={agentPredictions} icon={SearchCheck} accent="#FFB703" />
-        <StatCard label="观察投票" value={communityVotes} icon={Users} accent="#2A9DF4" />
-        <StatCard label="AI 选手" value={aiPlayers.length} icon={Bot} accent="#F25F4C" />
-      </section>
+      <PublicAiBrief />
 
       <section className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
@@ -147,6 +219,15 @@ export function Home() {
           暂无该状态题目
         </div>
       )}
+    </div>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-sm border border-ink/10 bg-fifaBlue/5 p-3">
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-ink/45">{label}</p>
+      <p className="mt-1 text-2xl font-black text-fifaBlue">{value}</p>
     </div>
   );
 }
